@@ -118,10 +118,11 @@ def cal_loss_cross_entropy(y_pre, y):
   loss = -np.sum(y*np.log(y_pre))
   return loss/float(y_pre.shape[0])
   
-def backward(label, out, lr=0.005):
+def backward(label, out, loss=0, lr=0.005):
   # Calculate initial gradient
   gradient = np.zeros(10)
   gradient[label] = -1 / out[label]
+  # gradient[label] = -loss / out[label]
 
   # ------------------------------Backprop-----------------------------------
   # SoftMax
@@ -145,7 +146,7 @@ def backward(label, out, lr=0.005):
 def train(im, label, debug=False, lr=.005):
   pred = forward(im, label, debug)
   out_soft, loss, acc = cal_loss(pred, label)
-  backward(label, out_soft, lr=0.005)
+  backward(label, out_soft, loss, lr=0.005)
   return loss, acc
 
 def val(im, label):
@@ -225,7 +226,7 @@ else:
 lr = 0.005
   
 
-debug=True
+debug=False
 if debug: save_weights(f'weights/debug.pkl', lr, max_acc)
   
   
@@ -234,45 +235,49 @@ if debug: save_weights(f'weights/debug.pkl', lr, max_acc)
 # ------------------------------- Train the CNN for 3 epochs ----------------------------------
 if run_train:
   print(f'Training Initialized.')
-  for epoch in range(10):
+  print(f"\tTotal number of training   images: {len(train_labels)}")
+  print(f"\tTotal number of validation images: {len(test_labels)}")
+  print(f"\tTraining will run for {total_epoch} epochs.")
+  print(f"\tResults will be logged after every {training_acc_internal} images.")
+  for epoch in range(total_epoch):
     print('\n--- Epoch %d ---' % (epoch + 1))
-
-    # # Shuffle the training data
-    # permutation = np.random.permutation(len(train_images))
-    # train_images = train_images[permutation]
-    # train_labels = train_labels[permutation]
-
+            
     # Initialize Variables
-    loss = 0
-    num_correct = 0
-    
+    loss, num_correct = 0, 0
     for i, (im, label) in tqdm(enumerate(zip(train_images, train_labels))):
       
-      # Printing Debug Info
-      if i % 100 == 99:
-        # if   num_correct > 98: lr=0.00001
-        # if   num_correct > 95: lr=0.0005
-        # elif num_correct > 90: lr=0.001
-        # elif num_correct > 80: lr=0.002
-        # elif num_correct > 70: lr=0.003
-        # elif num_correct > 60: lr=0.004
+      # Logging results
+      if i % training_acc_internal == training_acc_internal-1:
+        lr = adjust_lr(num_correct)
         if num_correct > max_acc: 
           max_acc = num_correct
           save_weights(f'weights/best_{num_correct}.pkl', lr, max_acc)
           save_weights(f'weights/last.pkl', lr, max_acc)
-        print(f'\n[Step {(i+1)}] : Avg Loss {np.round((loss / 100),2)} | Acc: {num_correct} | LR: {lr}')
+        print(f'\n[Step {(i+1)}] : Avg Loss for {training_acc_internal} iterations is {np.round((loss / 100),2)} | Training Acc: {num_correct} | LR: {lr}')
         loss = 0
         num_correct = 0
-
+          
       # Train the network
       l, acc = train(im, label, debug, lr=lr)
       loss += l
       num_correct += acc
+           
+    print(f"End of epoch {epoch+1}")      
+
+    print(f"\n\nCalculating validation scores at the end of epoch.")
+    loss, num_correct = 0, 0
+    for im, label in tqdm(zip(test_images, test_labels)):
+      l, acc = val(im, label)
+      loss += l
+      num_correct += acc
+    num_tests = len(test_images)
+    print('Test Loss:', loss / num_tests)
+    print('Test Accuracy:', num_correct / num_tests)
+
 
 
 if run_val:
-  # Test the CNN
-  print('\n--- Testing the CNN ---')
+  print(f'\n--- Testing the CNN for {len(test_labels)} images---')
   loss = 0
   num_correct = 0
   for im, label in tqdm(zip(test_images, test_labels)):
@@ -281,5 +286,5 @@ if run_val:
     num_correct += acc
 
   num_tests = len(test_images)
-  print('Test Loss:', loss / num_tests)
+  print('\nTest Loss:', loss / num_tests)
   print('Test Accuracy:', num_correct / num_tests)

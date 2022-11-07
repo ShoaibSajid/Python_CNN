@@ -236,7 +236,7 @@ if run_train:
       # Logging results
       if i % training_acc_internal == training_acc_internal-1:
         lr = adjust_lr(num_correct)
-        print(f'\n[Step {(i+1)}] : For {training_acc_internal} iterations, the Avg Loss is {np.round((loss / {training_acc_internal}),2)} | Training Acc: {num_correct} | LR: {lr}')
+        print(f'\n[Step {(i+1)}] : For {training_acc_internal} iterations, the Avg Loss is {np.round((loss / training_acc_internal),2)} | Training Acc: {num_correct} | LR: {lr}')
         loss, num_correct = 0, 0
           
       # Train the network

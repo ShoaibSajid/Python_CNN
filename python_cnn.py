@@ -96,8 +96,8 @@ def forward(im, label, debug=False):
 def backward(label, out, loss=1, lr=0.005):
   # Calculate initial gradient
   gradient = np.zeros(10)
-#   gradient[label] = -1 / out[label]
-  gradient[label] = -loss / out[label]
+  gradient[label] = -1 / out[label]
+#   gradient[label] = -loss / out[label]
 
   # ------------------------------Backprop-----------------------------------
   # SoftMax

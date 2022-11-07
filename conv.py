@@ -223,42 +223,9 @@ class Conv3x3_1_to_n_padding:
         
     # errors of previous layer = weights_of_this_layer-T * errors of this layer
     
-
-    # for k in range(self.last_input.shape[2]):
-    #   for derivative, i, j in self.iterate_regions(d_L_d_out):
-    #       filt_weights = self.filters[:,:,:,k]
-    #       filt_weights_transpose = np.transpose(filt_weights)
-    #       d_L_d_input[i, j, k] = np.sum(derivative * filt_weights_transpose, axis=(0,1,2))
-    #       # d_L_d_input[i, j, k] = derivative * filt_weights_transpose
-        
-    #     #     d_L_d_input[i,j,k] += d_L_d_out[i, j, f] * im_region
-
     # Update filters
     self.filters -= learn_rate * d_L_d_filters
     
-    # d_L_d_input = ?
-
-    # d_L_d_input = np.zeros(self.last_input.shape)
-    # for im_region, i, j in self.iterate_regions(self.last_input):
-    #   h, w, f = im_region.shape
-    #   amax = np.amax(im_region, axis=(0, 1))
-
-    #   for i2 in range(h):
-    #     for j2 in range(w):
-    #       for f2 in range(f):
-    #         # If this pixel was the max value, copy the gradient to it.
-    #         if im_region[i2, j2, f2] == amax[f2]:
-    #           d_L_d_input[i * 2 + i2, j * 2 + j2, f2] = d_L_d_out[i, j, f2]
-
-
-
-    # for im_region, i, j in self.iterate_regions(self.last_input):
-    #   for f in range(self.num_filters):
-    #     d_L_d_filters[f] += d_L_d_out[i, j, f] * im_region
-    # We aren't returning anything here since we use Conv3x3 as the first layer in our CNN.
-    # Otherwise, we'd need to return the loss gradient for this layer's inputs, just like every
-    # other layer in our CNN.
-    # return None
     return d_L_d_input
 
 
@@ -331,26 +298,6 @@ class Conv3x3_n_to_n_padding:
     
     
     d_L_d_input   = np.zeros(self.last_input.shape) 
-    
-    # Left
-    # for in_ch in range(self.last_input.shape[2]):
-    #   for out_ch in range(self.num_filters):
-    #     d_L_d_input[:,:,in_ch] += d_L_d_out[:,:, out_ch] * self.last_input[:,:,in_ch] 
-  
-      
-    # # Middle
-    # for im_region, i, j in self.iterate_regions(d_L_d_out):
-    #   for in_ch in range(d_L_d_input.shape[-1]):
-    #     for filter in range(self.num_filters):
-    #       d_L_d_input[i,j,in_ch] += np.sum ( im_region[:,:,filter] *  self.filters[filter,:,:,in_ch] , axis=(0,1) )
-  
-      
-    # Method 3
-    # for im_region, i, j in self.iterate_regions(d_L_d_out):
-    #   for in_ch in range(d_L_d_input.shape[-1]):
-    #     d_L_d_input[i,j,in_ch] += np.sum ( im_region[:,:,:] * np.transpose( self.filters[:,:,:,in_ch]) , axis=(0,1,2) )
-    #     # d_L_d_input[i,j,in_ch] += np.sum( np.matmul( im_region[:,:,:] , np.transpose( self.filters[:,:,:,in_ch] , axes=(2,0,1)) ) , axis=(0,1,2) )
-  
       
     # Method 4
     for im_region, i, j in self.iterate_regions(d_L_d_out):
@@ -358,35 +305,8 @@ class Conv3x3_n_to_n_padding:
         # d_L_d_input[i,j,in_ch] += np.sum ( im_region[:,:,:] * np.transpose( self.filters[:,:,:,in_ch]) , axis=(0,1,2) )
         d_L_d_input[i,j,in_ch] += np.sum( np.matmul( im_region[:,:,:] , np.transpose( self.filters[:,:,:,in_ch] , axes=(2,0,1)) ) , axis=(0,1,2) )
   
-  
-    #TODO: change to filters
-    #TODO: take transpose
-    # Use np.matmul
 
     # Update filters
     self.filters -= learn_rate * d_L_d_filters
-    
-    # d_L_d_input = ?
 
-    # d_L_d_input = np.zeros(self.last_input.shape)
-    # for im_region, i, j in self.iterate_regions(self.last_input):
-    #   h, w, f = im_region.shape
-    #   amax = np.amax(im_region, axis=(0, 1))
-
-    #   for i2 in range(h):
-    #     for j2 in range(w):
-    #       for f2 in range(f):
-    #         # If this pixel was the max value, copy the gradient to it.
-    #         if im_region[i2, j2, f2] == amax[f2]:
-    #           d_L_d_input[i * 2 + i2, j * 2 + j2, f2] = d_L_d_out[i, j, f2]
-
-
-
-    # for im_region, i, j in self.iterate_regions(self.last_input):
-    #   for f in range(self.num_filters):
-    #     d_L_d_filters[f] += d_L_d_out[i, j, f] * im_region
-    # We aren't returning anything here since we use Conv3x3 as the first layer in our CNN.
-    # Otherwise, we'd need to return the loss gradient for this layer's inputs, just like every
-    # other layer in our CNN.
-    # return None
     return d_L_d_input

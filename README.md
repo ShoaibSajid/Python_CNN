@@ -6,7 +6,7 @@ This was written using basic python to deeply understand the forward and backwar
 Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+pip install tqdm matplotlib mnist==0.2.2 numpy
 ```
 
 Then, run it with no arguments:

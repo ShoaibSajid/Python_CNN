@@ -1,7 +1,7 @@
 import numpy as np
 
 class Relu:
-  # A standard fully-connected layer with softmax activation.
+  # A standard ReLu activation layer.
 
   def __init__(self):
     pass
@@ -9,55 +9,29 @@ class Relu:
 
   def forward(self, input):
     '''
-    Performs a forward pass of the softmax layer using the given input.
-    Returns a 1d numpy array containing the respective probability values.
-    - input can be any array with any dimensions.
+    The forward propagation is used to calculate the output of a neural network given an input. 
+    In the case of ReLU activation function, the output is calculated as the maximum of 0 and the input value
+  
+    The input is passed through the np.maximum function which returns the element-wise maximum of 0 and the input values. 
+    The self.last_input is stored for use during backpropagation
+    The output is returned.
     '''
-    self.last_totals = input
-    
-    out = input
-    
-    shape = input.shape
-    if len(shape)==2:
-      for i in range(shape[0]):
-        for j in range(shape[1]):
-          out[i,j]=max(0.0,input[i,j])
-
-    if len(shape)==3:
-      for i in range(shape[0]):
-        for j in range(shape[1]):
-          for k in range(shape[2]):
-            out[i,j,k]=max(0.0,input[i,j,k])
-    
-    self.last_output = out
+    out = np.maximum(0, input)
+    self.last_input = input
     return out
   
   
 
   def backprop(self, d_L_d_out):
     '''
-    Performs a backward pass of the softmax layer.
-    Returns the loss gradient for this layer's inputs.
-    - d_L_d_out is the loss gradient for this layer's outputs.
-    - learn_rate is a float.
+    The backward propagation is used to calculate the gradients of the loss function with respect to the parameters of the neural network. 
+    In the case of ReLU activation function, the gradient of the loss with respect to the input is 1 for positive input values and 0 for negative input values
+  
+    The input dout is the gradient of the loss with respect to the output of the ReLU layer. 
+    The self.last_input value x is retrieved from the forward propagation step. 
+    The gradient with respect to the input is calculated as a copy of dout and set to 0 where the input value is negative
     '''
-    # We know only 1 element of d_L_d_out will be nonzero
-    for i, gradient in enumerate(d_L_d_out):
-      if gradient == 0:
-        continue
-
-      # e^totals
-      t_exp = np.exp(self.last_totals)
-
-      # Sum of all e^totals
-      S = np.sum(t_exp)
-      if S==0: S=1
-
-      # Gradients of out[i] against totals
-      d_out_d_t = -t_exp[i] * t_exp / (S ** 2)
-      d_out_d_t[i] = t_exp[i] * (S - t_exp[i]) / (S ** 2)
-      
-      # Gradients of loss against totals
-      d_L_d_t = gradient * d_out_d_t
-      
-      return d_L_d_t
+    x = self.last_input
+    dx = d_L_d_out.copy()
+    dx[x <= 0] = 0
+    return dx

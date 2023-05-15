@@ -202,7 +202,10 @@ class Conv(object):
     - db: Gradient with respect to b
     """
     dx, dw  = None, None
-
+    #############################################################################
+    # TODO: Implement the convolutional backward pass.                          #
+    #############################################################################
+    # Replace "pass" statement with your code
     x, w, b, conv_param = cache
     pad = conv_param['pad']
     stride = conv_param['stride']
@@ -849,35 +852,23 @@ class DeepConvNet(object):
         # print('max_pool')
         if self.batchnorm:
           #print('batch_pool')
-          out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward(out, self.params['W{}'.format(i)], self.params['gamma{}'.format(i)],self.params['beta{}'.format(i)],conv_param,self.bn_params[i],pool_param)
-          with open('./output_scratch/conv_bn_relu_pool{}'.format(i), mode='w') as f:
-            f.write(str(out))
+          out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward(out, self.params['W{}'.format(i)], self.params['gamma{}'.format(i)],self.params['beta{}'.format(i)],conv_param,self.bn_params[i],pool_param) 
         else:  
-          out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward(out,self.params['W{}'.format(i)], conv_param,pool_param)
-          with open('./output_scratch/conv_bn_pool{}'.format(i), mode='w') as f:
-            f.write(str(out))
+          out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward(out,self.params['W{}'.format(i)], conv_param,pool_param) 
       else:
         if self.slowpool and i == 6 :
           # print(self.num_filters[i])
           out = F.pad(out, (0, 1, 0, 1))
           out, _ = MaxPool.forward(out, slowpool_param)
-          with open('./output_scratch/pad_slowpool{}'.format(i), mode='w') as f:
-            f.write(str(out))
         if self.batchnorm:
           #print('batch_without_pool')
-          out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward(out,self.params['W{}'.format(i)],
+          out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward(out,self.params['W{}'.format(i)], 
           self.params['gamma{}'.format(i)],self.params['beta{}'.format(i)],conv_param,self.bn_params[i]) 
-          with open('./output_scratch/conv_bn_relu{}'.format(i), mode='w') as f:
-            f.write(str(out))
         else:
-          out,cache['{}'.format(i)] = Conv_ReLU.forward(out,self.params['W{}'.format(i)],conv_param)
-          with open('./output_scratch/conv_relu{}'.format(i), mode='w') as f:
-            f.write(str(out))
+          out,cache['{}'.format(i)] = Conv_ReLU.forward(out,self.params['W{}'.format(i)],conv_param) 
     i+=1
     conv_param['pad'] = 0
     out, cache['{}'.format(i)] = ConvB.forward(out,self.params['W{}'.format(i)], self.params['b{}'.format(i)], conv_param)
-    with open('./output_scratch/conv_final{}'.format(i), mode='w') as f:
-      f.write(str(out))
 
     scores = out
     bsize = out.shape[0]
@@ -942,6 +933,7 @@ class DeepConvNet(object):
     #       grads['b{}'.format(i)] = db
 
     return scores, loss, grads
+
 
 def kaiming_initializer(Din, Dout, K=None, relu=True, device='cpu',
                         dtype=torch.float32):

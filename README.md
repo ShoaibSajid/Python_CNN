@@ -82,6 +82,12 @@ conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit
 pip install torch==1.12.1+cu102 torchvision==0.13.1+cu102 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu102
 ```
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+ 
+
+
 ## Usage
 Run the following file:
 
@@ -93,6 +99,7 @@ or open the following file using jupyter / google colab
 wathna/exp_both.ipynb
 ```
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 

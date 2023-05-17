@@ -143,9 +143,9 @@ Project Link: [https://github.com/ShoaibSajid/Python_CNN/tree/Yolo](https://gith
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* []()
-* []()
-* []()
+* [Sereiwatha Ros](https://github.com/Nayuki-Sunder)
+* [Ali Haroon Turk]()
+* [Sawera Khurshid]()
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

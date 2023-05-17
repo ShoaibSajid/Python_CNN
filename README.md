@@ -11,8 +11,8 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="">
-    <img src="https://lh3.googleusercontent.com/ZqOtpPerXbIN3gwWccgT7KEC5FnWf8EDMqKGNewlhqOUVkfu-0EBtNS2YG0YjTQK2ST-Gf2nHNM_MIJxphIkf72IxDx_qWYSjHM2iCW7xV08WwtPH-EJ_UjhTgUrb8dwDg=w1280" alt="MSIS Lab" >
+  <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolo">
+    <img src="logo.jpg" alt="MSIS Lab" >
   </a>
 
 <h1 align="center">A Convolution Neural Network (CNN) From Scratch

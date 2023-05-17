@@ -5,14 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from cnn_scratch import DeepConvNet
-
-scratch = DeepConvNet(input_dims=(3, 416, 416),
-                        num_filters=[16, 32, 64, 128, 256, 512, 1024, 1024],
-                        max_pools=[0, 1, 2, 3, 4],
-                        weight_scale='kaiming',
-                        batchnorm=True,
-                        dtype=torch.float32, device='cpu')
-
 class WeightLoader(object):
     def __init__(self):
         super(WeightLoader, self).__init__()

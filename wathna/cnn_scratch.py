@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from tqdm import tqdm
 
 def svm_loss(x, y):
   """
@@ -53,7 +54,7 @@ def softmax_loss(x, y):
 class ConvB(object):
 
   @staticmethod
-  def forward(x, w, b, conv_param):
+  def forward(x, w, b, conv_param, _debug=False):
     """
     A naive implementation of the forward pass for a convolutional layer.
     The input consists of N data points, each with C channels, height H and
@@ -91,8 +92,9 @@ class ConvB(object):
     
     out = torch.zeros((N,F,H_out,W_out),dtype =  x.dtype, device = x.device)
 
+    _range = tqdm(range(F), desc='Processing' ) if _debug else range(F)
     for n in range(N):
-      for f in range(F):
+      for f in _range:
         for height in range(H_out):
           for width in range(W_out):
             out[n,f,height,width] = (x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] *w[f]).sum() + b[f]
@@ -141,7 +143,7 @@ class ConvB(object):
 class Conv(object):
 
   @staticmethod
-  def forward(x, w, conv_param):
+  def forward(x, w, conv_param, _debug=False):
     """
     A naive implementation of the forward pass for a convolutional layer.
     The input consists of N data points, each with C channels, height H and
@@ -178,8 +180,9 @@ class Conv(object):
     
     out = torch.zeros((N,F,H_out,W_out),dtype =  x.dtype, device = x.device)
 
+    _range = tqdm(range(F), desc='Processing' ) if _debug else range(F)
     for n in range(N):
-      for f in range(F):
+      for f in _range:
         for height in range(H_out):
           for width in range(W_out):
             out[n,f,height,width] = (x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] *w[f]).sum()
@@ -202,10 +205,7 @@ class Conv(object):
     - db: Gradient with respect to b
     """
     dx, dw  = None, None
-    #############################################################################
-    # TODO: Implement the convolutional backward pass.                          #
-    #############################################################################
-    # Replace "pass" statement with your code
+
     x, w, b, conv_param = cache
     pad = conv_param['pad']
     stride = conv_param['stride']
@@ -324,7 +324,7 @@ class MaxPool(object):
 class Conv_ReLU(object):
 
   @staticmethod
-  def forward(x, w, conv_param):
+  def forward(x, w, conv_param, _debug=False):
     """
     A convenience layer that performs a convolution followed by a ReLU.
     Inputs:
@@ -334,7 +334,7 @@ class Conv_ReLU(object):
     - out: Output from the ReLU
     - cache: Object to give to the backward pass
     """
-    a, conv_cache = Conv.forward(x, w, conv_param)
+    a, conv_cache = Conv.forward(x, w, conv_param, _debug=_debug)
     out, relu_cache = ReLU.forward(a)
     cache = (conv_cache, relu_cache)
     return out, cache
@@ -352,7 +352,7 @@ class Conv_ReLU(object):
 class Conv_ReLU_Pool(object):
 
   @staticmethod
-  def forward(x, w, conv_param, pool_param):
+  def forward(x, w, conv_param, pool_param, _debug=False):
     """
     A convenience layer that performs a convolution, a ReLU, and a pool.
     Inputs:
@@ -363,7 +363,7 @@ class Conv_ReLU_Pool(object):
     - out: Output from the pooling layer
     - cache: Object to give to the backward pass
     """
-    a, conv_cache = Conv.forward(x, w, conv_param)
+    a, conv_cache = Conv.forward(x, w, conv_param, _debug=_debug)
     s, relu_cache = ReLU.forward(a)
     out, pool_cache = MaxPool.forward(s, pool_param)
     cache = (conv_cache, relu_cache, pool_cache)
@@ -623,8 +623,8 @@ class SpatialBatchNorm(object):
 class Conv_BatchNorm_ReLU(object):
 
   @staticmethod
-  def forward(x, w, gamma, beta, conv_param, bn_param):
-    a, conv_cache = Conv.forward(x, w, conv_param)
+  def forward(x, w, gamma, beta, conv_param, bn_param, _debug=False):
+    a, conv_cache = Conv.forward(x, w, conv_param, _debug=_debug)
     an, bn_cache = SpatialBatchNorm.forward(a, gamma, beta, bn_param)
     out, relu_cache = ReLU.forward(an)
     cache = (conv_cache, bn_cache, relu_cache)
@@ -641,8 +641,8 @@ class Conv_BatchNorm_ReLU(object):
 class Conv_BatchNorm_ReLU_Pool(object):
 
   @staticmethod
-  def forward(x, w, gamma, beta, conv_param, bn_param, pool_param):
-    a, conv_cache = Conv.forward(x, w, conv_param)
+  def forward(x, w, gamma, beta, conv_param, bn_param, pool_param, _debug=False):
+    a, conv_cache = Conv.forward(x, w, conv_param, _debug=_debug)
     an, bn_cache = SpatialBatchNorm.forward(a, gamma, beta, bn_param)
     s, relu_cache = ReLU.forward(an)
     out, pool_cache = MaxPool.forward(s, pool_param)
@@ -686,7 +686,7 @@ class DeepConvNet(object):
                slowpool=True,
                num_classes=10, weight_scale=1e-3, reg=0.0,
                weight_initializer=None,
-               dtype=torch.float32, device='cpu'):
+               dtype=torch.float64, device='cpu', _debug=False):
     """
     Initialize a new network.
 
@@ -708,6 +708,8 @@ class DeepConvNet(object):
       double for numeric gradient checking.
     - device: device to use for computation. 'cpu' or 'cuda'    
     """
+    self._debug = _debug
+    self.debug_values= dict()
     self.params = {}
     self.num_layers = len(num_filters)+1
     self.max_pools = max_pools
@@ -846,29 +848,81 @@ class DeepConvNet(object):
     cache = {}
     out = X
     for i in range(self.num_layers-1):
+    # for i in tqdm(range(self.num_layers-1), desc='Processing all layers'):
       # print(i)
       # print(out.shape)
       if i in self.max_pools:
         # print('max_pool')
         if self.batchnorm:
           #print('batch_pool')
-          out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward(out, self.params['W{}'.format(i)], self.params['gamma{}'.format(i)],self.params['beta{}'.format(i)],conv_param,self.bn_params[i],pool_param) 
+          if self._debug: print(f"\nImplement Layer: conv_bn_relu_pool{i}\nInput shape: {out.shape}\nLayer shape: {self.params['W{}'.format(i)].shape}     \t with {conv_param}")
+          out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward(out, 
+                                                                       self.params['W{}'.format(i)], 
+                                                                       self.params['gamma{}'.format(i)],
+                                                                       self.params['beta{}'.format(i)],
+                                                                       conv_param,
+                                                                       self.bn_params[i],
+                                                                       pool_param, 
+                                                                       _debug=self._debug)
+          if self._debug: print(f"Output feature sample value: {out[0][0][0][0].detach().cpu().numpy()}")
+          if self._debug: self.debug_values[f'conv_bn_relu_pool{i}']=out[0][0][0][0].detach().cpu().numpy()
+          with open('./output_scratch/conv_bn_relu_pool{}'.format(i), mode='w') as f:
+            f.write(str(out))
         else:  
-          out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward(out,self.params['W{}'.format(i)], conv_param,pool_param) 
+          if self._debug: print(f"\nImplement Layer: conv_bn_pool{i}\nInput shape: {out.shape}\nLayer shape: {self.params['W{}'.format(i)].shape} \t with {conv_param}")
+          out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward(out,
+                                                             self.params['W{}'.format(i)], 
+                                                             conv_param,pool_param, 
+                                                             _debug=self._debug)
+          if self._debug: print(f"Output feature sample value: {out[0][0][0][0].detach().cpu().numpy()}")
+          if self._debug: self.debug_values[f'conv_bn_pool{i}']=out[0][0][0][0].detach().cpu().numpy()
+          with open('./output_scratch/conv_bn_pool{}'.format(i), mode='w') as f:
+            f.write(str(out))
       else:
         if self.slowpool and i == 6 :
           # print(self.num_filters[i])
+          if self._debug: print(f"\nImplement Layer: pad_slowpool{i}\nInput shape: {out.shape}\nLayer shape: {self.params['W{}'.format(i)].shape} \t with {slowpool_param}")
           out = F.pad(out, (0, 1, 0, 1))
           out, _ = MaxPool.forward(out, slowpool_param)
+          if self._debug: print(f"Output feature sample value: {out[0][0][0][0].detach().cpu().numpy()}")
+          if self._debug: self.debug_values[f'pad_slowpool{i}']=out[0][0][0][0].detach().cpu().numpy()
+          with open('./output_scratch/pad_slowpool{}'.format(i), mode='w') as f:
+            f.write(str(out))
         if self.batchnorm:
           #print('batch_without_pool')
-          out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward(out,self.params['W{}'.format(i)], 
-          self.params['gamma{}'.format(i)],self.params['beta{}'.format(i)],conv_param,self.bn_params[i]) 
+          if self._debug: print(f"\nImplement Layer: conv_bn_relu{i}\nInput shape: {out.shape}\nLayer shape: {self.params['W{}'.format(i)].shape} \t with {conv_param}")
+          out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward(out,self.params['W{}'.format(i)],
+                                                                  self.params['gamma{}'.format(i)],
+                                                                  self.params['beta{}'.format(i)],
+                                                                  conv_param,
+                                                                  self.bn_params[i],
+                                                                  _debug=self._debug) 
+          if self._debug: print(f"Output feature sample value: {out[0][0][0][0].detach().cpu().numpy()}")
+          if self._debug: self.debug_values[f'conv_bn_relu{i}']=out[0][0][0][0].detach().cpu().numpy()
+          with open('./output_scratch/conv_bn_relu{}'.format(i), mode='w') as f:
+            f.write(str(out))
         else:
-          out,cache['{}'.format(i)] = Conv_ReLU.forward(out,self.params['W{}'.format(i)],conv_param) 
+          if self._debug: print(f"\nImplement Layer: conv_relu{i}\nInput shape: {out.shape}\nLayer shape: {self.params['W{}'.format(i)].shape} \t with {conv_param}")
+          out,cache['{}'.format(i)] = Conv_ReLU.forward(out,
+                                                        self.params['W{}'.format(i)],
+                                                        conv_param,
+                                                        _debug=self._debug)
+          if self._debug: print(f"Output feature sample value: {out[0][0][0][0].detach().cpu().numpy()}")
+          if self._debug: self.debug_values[f'conv_relu{i}']=out[0][0][0][0].detach().cpu().numpy()
+          with open('./output_scratch/conv_relu{}'.format(i), mode='w') as f:
+            f.write(str(out))
     i+=1
     conv_param['pad'] = 0
-    out, cache['{}'.format(i)] = ConvB.forward(out,self.params['W{}'.format(i)], self.params['b{}'.format(i)], conv_param)
+    if self._debug: print(f"\nImplement Layer: conv_final{i}\nInput shape: {out.shape}\nLayer shape: {self.params['W{}'.format(i)].shape} \t with {conv_param}")
+    out, cache['{}'.format(i)] = ConvB.forward(out,
+                                               self.params['W{}'.format(i)], 
+                                               self.params['b{}'.format(i)], 
+                                               conv_param, 
+                                               _debug=self._debug)
+    if self._debug: print(f"Output feature sample value: {out[0][0][0][0].detach().cpu().numpy()}")
+    if self._debug: self.debug_values[f'conv_final{i}']=out[0][0][0][0].detach().cpu().numpy()
+    with open('./output_scratch/conv_final{}'.format(i), mode='w') as f:
+      f.write(str(out))
 
     scores = out
     bsize = out.shape[0]
@@ -934,9 +988,8 @@ class DeepConvNet(object):
 
     return scores, loss, grads
 
-
 def kaiming_initializer(Din, Dout, K=None, relu=True, device='cpu',
-                        dtype=torch.float32):
+                        dtype=torch.float64):
   """
   Implement Kaiming initialization for linear and convolution layers.
   

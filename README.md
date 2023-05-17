@@ -34,6 +34,10 @@
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
+ 
+
+
+
 <!-- TABLE OF CONTENTS -->
 ## Table of Contents
   <ol>
@@ -49,12 +53,6 @@
 
 
  
-
-
- 
- 
- 
-
 
 
 
@@ -114,11 +112,6 @@ Don't forget to give the project a star! Thanks again!
 
 
 
-
-
-
- 
-
 <!-- LICENSE -->
 ## License
 
@@ -129,6 +122,27 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 
 
+
+
+<!-- CONTACT -->
+## Contact
+
+Shoaib Sajid - shoaib.sajid.ss@gmail.com
+
+Project Link: [https://github.com/ShoaibSajid/Python_CNN/tree/Yolo](https://github.com/ShoaibSajid/Python_CNN/tree/Yolo)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
+
+* []()
+* []()
+* []()
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 

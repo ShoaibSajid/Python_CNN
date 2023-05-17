@@ -8,7 +8,7 @@ import eecs598
 from cnn_torch import DeepConvNetTorch, FastConv, FastConvWB, Conv_BatchNorm_ReLU, Conv_BatchNorm_ReLU_Pool, Conv_ReLU
 from cnn_scratch import DeepConvNet
 
-
+scratch=[]
 class WeightLoader(object):
     def __init__(self):
         super(WeightLoader, self).__init__()

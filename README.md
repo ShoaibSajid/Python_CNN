@@ -22,7 +22,7 @@ Then, run it with no arguments:
 ```bash
 python wathna/exp_both.py
 ```
-or
-```bash
-python wathna/exp_both.py
+or open using jupyter / google colab
+```
+wathna/exp_both.ipynb
 ```

@@ -120,7 +120,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
+ 
 
 
 
@@ -132,6 +132,9 @@ Shoaib Sajid - shoaib.sajid.ss@gmail.com
 Project Link: [https://github.com/ShoaibSajid/Python_CNN/tree/Yolo](https://github.com/ShoaibSajid/Python_CNN/tree/Yolo)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+ 
 
 
 

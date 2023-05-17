@@ -35,8 +35,7 @@
 
 
 <!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
+## Table of Contents
   <ol>
     <li>
       <a href="#about-the-project">About The Project</a>
@@ -107,9 +106,17 @@ wathna/exp_both.ipynb
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
+ 
 
 
 
+
+<!-- LICENSE -->
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 

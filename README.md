@@ -31,7 +31,7 @@
     <a href="https://github.com/ShoaibSajid/Python_CNN/issues">Request Feature</a>
   </p>
 </div>
-
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 <!-- TABLE OF CONTENTS -->
@@ -59,16 +59,6 @@
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
-
-
-
-<!-- ABOUT THE PROJECT -->
-## About The Project
-
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
-
-Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -76,28 +66,29 @@ Here's a blank template to get started: To avoid retyping too much info. Do a se
 
 
 
-
-
-
-
-## Usage
-
-Install dependencies:
+## Dependencies
+ 
 
 ```bash
 pip install tqdm matplotlib mnist==0.2.2 numpy
 
+```
+
+```bash
 conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=10.2 -c pytorch
-or
+
+# or
+
 pip install torch==1.12.1+cu102 torchvision==0.13.1+cu102 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu102
 ```
 
-Then, run the following file:
+## Usage
+Run the following file:
 
 ```bash
 python wathna/exp_both.py
 ```
-or open using jupyter / google colab
+or open the following file using jupyter / google colab
 ```
 wathna/exp_both.ipynb
 ```

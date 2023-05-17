@@ -17,7 +17,7 @@ Install dependencies:
 pip install tqdm matplotlib mnist==0.2.2 numpy
 ```
 
-Then, run it with no arguments:
+Then, run the following file:
 
 ```bash
 python wathna/exp_both.py

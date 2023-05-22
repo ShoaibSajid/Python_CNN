@@ -91,6 +91,7 @@ class Yolov2(nn.Module):
 
 if __name__ == '__main__':
     model = Yolov2()
+    np.random.seed(0)
     im = np.random.randn(1, 3, 416, 416)
     im_variable = torch.from_numpy(im).float()
     out = model(im_variable)

@@ -5,10 +5,32 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Python: Current File",
+			"name": "Exp Shoaib",
 			"type": "python",
 			"request": "launch",
-			"program": "/home/gpuadmin/Python_CNN/wathna/exp_both.py",
+			"program": "/home/gpuadmin/Python_CNN/wathna/exp_shoaib.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"cwd": "/home/gpuadmin/Python_CNN/wathna"
+		},
+
+		
+		{
+			"name": "Exp both",
+			"type": "python",
+			"request": "launch",
+			"program": "/home/gpuadmin/Python_CNN/wathna/exp_shoaib.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"cwd": "/home/gpuadmin/Python_CNN/wathna"
+		},
+
+		
+		{
+			"name": "Yolov2-tiny original",
+			"type": "python",
+			"request": "launch",
+			"program": "/home/gpuadmin/Python_CNN/wathna_new/yolov2tiny.py",
 			"console": "integratedTerminal",
 			"justMyCode": true,
 			"cwd": "/home/gpuadmin/Python_CNN/wathna"

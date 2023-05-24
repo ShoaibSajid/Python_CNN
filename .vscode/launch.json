@@ -34,6 +34,17 @@
 			"console": "integratedTerminal",
 			"justMyCode": true,
 			"cwd": "/home/gpuadmin/Python_CNN/wathna"
+		},
+
+		
+		{
+			"name": "Exp Scratch",
+			"type": "python",
+			"request": "launch",
+			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna_new/exp_scartch.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna_new/"
 		}
 	]
 }

@@ -3,9 +3,45 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+# from torch.utils.data import DataLoader
+# from dataset.factory import get_imdb
+# from dataset.roidb import RoiDataset, detection_collate
 from loss import build_target, yolo_loss
 
+# dataset = 'voc0712trainval'
+# imdb_name = 'voc_2007_trainval+voc_2012_trainval'
+# imdbval_name ='voc_2007_test'
+
+
+# def get_dataset(datasetnames):
+#     names = datasetnames.split('+')
+#     dataset = RoiDataset(get_imdb(names[0]))
+#     print('load dataset {}'.format(names[0]))
+#     for name in names[1:]:
+#         tmp = RoiDataset(get_imdb(name))
+#         dataset += tmp
+#         print('load and add dataset {}'.format(name))
+#     return dataset
+
+# train_dataset = get_dataset(imdb_name)
+
+
+# train_dataloader = DataLoader(train_dataset, batch_size=64,
+#                                 shuffle=True, num_workers=2,
+#                                 collate_fn=detection_collate, drop_last=True)
+
+# train_data_iter = iter(train_dataloader)
+# im_data, gt_boxes, gt_classes, num_obj = next(train_data_iter)
+im_data = torch.randn(64, 3, 416, 416)
+gt_boxes = torch.randn(64, 10, 4)
+gt_classes = torch.randn(64, 10)
+num_obj = torch.randint(0, 20, (64, 1))
+
+
+im_data = im_data[0].unsqueeze(0)
+gt_boxes = gt_boxes[0].unsqueeze(0)
+gt_classes = gt_classes[0].unsqueeze(0)
+num_obj = num_obj[0].unsqueeze(0)
 
 
 class Yolov2(nn.Module):
@@ -48,7 +84,7 @@ class Yolov2(nn.Module):
         self.conv8 = nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn8 = nn.BatchNorm2d(1024)
 
-        self.conv9 = nn.Sequential(nn.Conv2d(1024, (5 + self.num_classes) * self.num_anchors, kernel_size=1))
+        self.conv9 = nn.Conv2d(1024, (5 + self.num_classes) * self.num_anchors, kernel_size=1)
 
 
     def forward(self, x, gt_boxes=None, gt_classes=None, num_boxes=None, training=False):
@@ -107,15 +143,20 @@ if __name__ == '__main__':
     model = Yolov2()
     im = np.random.randn(1, 3, 416, 416)
     im_variable = torch.from_numpy(im).float()
-    boxes = torch.randn(2, 64, 10, 4)
-    gt_classes = torch.randn(2, 64, 10)
-    num_obj = torch.ones(2, 64, 1)
-    out = model(im_variable, gt_boxes=boxes, gt_classes=gt_classes, num_boxes=num_obj, training=True)
+
+    out = model(im_variable, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj, training=True)
     box_loss, iou_loss, class_loss = out
+    print(model.conv9.weight.shape)
     # delta_pred, conf_pred, class_pred = out
     print('box_loss', box_loss)
     print('iou_loss', iou_loss)
     print('class_loss', class_loss)
+    loss = box_loss + class_loss + iou_loss
+    print("total_loss", loss)
+    print("parameters", model.conv9.weight.shape)
+    loss.backward()
+    # print(model.conv9.weight.grad, model.conv9.bias.shape)
+    print(model.conv9.weight.grad.shape, model.conv9.bias.grad.shape)
     # print('delta_pred size:', delta_pred.size())
     # print('conf_pred size:', conf_pred.size())
     # print('class_pred size:', class_pred.size())

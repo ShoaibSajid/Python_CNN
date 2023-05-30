@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 
 import torch
@@ -21,6 +22,15 @@ class WeightLoader(object):
         
     def load_conv_bn(self, conv_model, bn_model):
 
+        
+        Path('./weight_parameter/bn_param/bias').mkdir(parents=True, exist_ok=True)
+        Path('./weight_parameter/bn_param/gamma').mkdir(parents=True, exist_ok=True)
+        Path('./weight_parameter/bn_param/running_mean').mkdir(parents=True, exist_ok=True)
+        Path('./weight_parameter/bn_param/running_var').mkdir(parents=True, exist_ok=True)
+        Path('./weight_parameter/conv_param/w').mkdir(parents=True, exist_ok=True)
+        Path('./weight_parameter/bias/').mkdir(parents=True, exist_ok=True)
+        
+        
         num_w = conv_model.weight.numel()
         num_b = bn_model.bias.numel()
 

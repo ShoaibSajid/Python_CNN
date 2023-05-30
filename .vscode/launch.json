@@ -45,6 +45,17 @@
 			"console": "integratedTerminal",
 			"justMyCode": true,
 			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna_2/"
+		},
+
+		
+		{
+			"name": "Wathna3 - Yolov2 Tiny",
+			"type": "python",
+			"request": "launch",
+			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/yolov2tiny.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/"
 		}
 	]
 }

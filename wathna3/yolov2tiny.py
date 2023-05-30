@@ -22,7 +22,7 @@ class WeightLoader(object):
         
     def load_conv_bn(self, conv_model, bn_model):
 
-        
+        # Make directories
         Path('./weight_parameter/bn_param/bias').mkdir(parents=True, exist_ok=True)
         Path('./weight_parameter/bn_param/gamma').mkdir(parents=True, exist_ok=True)
         Path('./weight_parameter/bn_param/running_mean').mkdir(parents=True, exist_ok=True)

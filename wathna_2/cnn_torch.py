@@ -362,6 +362,17 @@ class DeepConvNetTorch(object):
     if device == 'cuda':
       device = 'cuda:0'
     
+    ############################################################################
+    # TODO: Initialize the parameters for the DeepConvNet. All weights,        #
+    # biases, and batchnorm scale and shift parameters should be stored in the #
+    # dictionary self.params.                                                  #
+    #                                                                          #
+    # Weights for conv and fully-connected layers should be initialized        #
+    # according to weight_scale. Biases should be initialized to zero.         #
+    # Batchnorm scale (gamma) and shift (beta) parameters should be initilized #
+    # to ones and zeros respectively.                                          #           
+    ############################################################################
+    # Replace "pass" statement with your code
     filter_size = 3
     conv_param = {'stride': 1, 'pad': 1}
     pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
@@ -402,7 +413,15 @@ class DeepConvNetTorch(object):
     #     self.params['W{}'.format(i)] = torch.zeros(num_filter*H_out*W_out, num_classes, dtype=dtype,device = device)
     #     self.params['W{}'.format(i)] += weight_scale*torch.randn(num_filter*H_out*W_out, num_classes, dtype=dtype,device= device)
     self.params['b{}'.format(i)] = torch.zeros(125, dtype=dtype,device= device)
+    ############################################################################
+    #                             END OF YOUR CODE                             #
+    ############################################################################
 
+    # With batch normalization we need to keep track of running means and
+    # variances, so we need to pass a special bn_param object to each batch
+    # normalization layer. You should pass self.bn_params[0] to the forward pass
+    # of the first batch normalization layer, self.bn_params[1] to the forward
+    # pass of the second batch normalization layer, etc.
     self.bn_params = []
     if self.batchnorm:
       self.bn_params = [{'mode': 'train'} for _ in range(len(num_filters))]
@@ -464,13 +483,14 @@ class DeepConvNetTorch(object):
     print("load checkpoint file: {}".format(path))
 
 
-  def loss(self, X, y=None, gt_boxes=None, gt_classes=None, num_boxes=None, training=False):
+  def loss(self, X, y=None, gt_boxes=None, gt_classes=None, num_boxes=None):
     """
     Evaluate loss and gradient for the deep convolutional network.
     Input / output: Same API as ThreeLayerConvNet.
     """
     X = X.to(self.dtype)
     mode = 'test' if y is None else 'train'
+
     # Set train/test mode for batchnorm params since they
     # behave differently during training and testing.
     if self.batchnorm:
@@ -479,6 +499,8 @@ class DeepConvNetTorch(object):
 
     scores = None
 
+    # pass conv_param to the forward pass for the convolutional layer
+    # Padding and stride chosen to preserve the input spatial size
     filter_size = 3
     conv_param = {'stride': 1, 'pad': (filter_size - 1) // 2}
 
@@ -498,39 +520,24 @@ class DeepConvNetTorch(object):
         if self.batchnorm:
           #print('batch_pool')
           out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward(out, self.params['W{}'.format(i)], self.params['gamma{}'.format(i)], self.params['beta{}'.format(i)], conv_param, self.bn_params[i],pool_param) 
-          with open('./output_torch/conv_bn_relu_pool{}'.format(i), mode='w') as f:
-            f.write(str(out))
         else:  
-          out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward(out,self.params['W{}'.format(i)], conv_param,pool_param)
-          with open('./output_torch/conv_relu_pool{}'.format(i), mode='w') as f:
-            f.write(str(out))
+          out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward(out,self.params['W{}'.format(i)], conv_param,pool_param) 
       else:
         if self.slowpool and i == 6 :
           # print(self.num_filters[i])
           out = F.pad(out, (0, 1, 0, 1))
-          out = FastMaxPool.forward(out, slowpool_param)
-          with open('./output_torch/pad_slowpool{}'.format(i), mode='w') as f:
-            f.write(str(out))
+          out, _ = FastMaxPool.forward(out, slowpool_param)
         if self.batchnorm:
           #print('batch_without_pool')
           out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward(out,self.params['W{}'.format(i)], 
-          self.params['gamma{}'.format(i)],self.params['beta{}'.format(i)],conv_param,self.bn_params[i])
-          with open('./output_torch/conv_bn_relu{}'.format(i), mode='w') as f:
-            f.write(str(out))
+          self.params['gamma{}'.format(i)],self.params['beta{}'.format(i)],conv_param,self.bn_params[i]) 
         else:
-          out,cache['{}'.format(i)] = Conv_ReLU.forward(out, self.params['W{}'.format(i)], conv_param)
-          with open('./output_torch/conv_relu{}'.format(i), mode='w') as f:
-            f.write(str(out))
+          out,cache['{}'.format(i)] = Conv_ReLU.forward(out, self.params['W{}'.format(i)], conv_param) 
     i+=1
     conv_param['pad'] = 0
-
     out, cache['{}'.format(i)] = FastConvWB.forward(out, self.params['W{}'.format(i)], self.params['b{}'.format(i)], conv_param)
-    
-    with open('./output_torch/conv_final{}'.format(i), mode='w') as f:
-        f.write(str(out))
 
     scores = out
-
     bsize, _, h, w = out.shape
     out = out.permute(0, 2, 3, 1).contiguous().view(bsize, 13 * 13 * 5, 5 + 20)
 
@@ -542,19 +549,14 @@ class DeepConvNetTorch(object):
     delta_pred = torch.cat([xy_pred, hw_pred], dim=-1)
     
 
-
-    if y is None:
-      return delta_pred, conf_pred, class_pred
     
-    if training:
-        output_variable = (delta_pred, conf_pred, class_score)
-        output_data = [v.data for v in output_variable]
-        gt_data = (gt_boxes, gt_classes, num_boxes)
-        target_data = build_target(output_data, gt_data, h, w)
 
-        target_variable = [v for v in target_data]
-        box_loss, iou_loss, class_loss = yolo_loss(output_variable, target_variable)
+    # output_variable = (delta_pred, conf_pred, class_score)
+    # output_data = [v.data for v in output_variable]
+    # gt_data = (gt_boxes, gt_classes, num_boxes)
+    # target_data = build_target(output_data, gt_data, h, w)
 
+<<<<<<< HEAD:wathna_2/cnn_torch.py
         return box_loss, iou_loss, class_loss
     
     # loss = box_loss + ...
@@ -562,43 +564,57 @@ class DeepConvNetTorch(object):
     out.retain_grad()
     loss.backward()
     dout = out.grad
+=======
+    # target_variable = [(v) for v in target_data]
+    # box_loss, iou_loss, class_loss = yolo_loss(output_variable, target_variable)
+>>>>>>> 621fd8c6df7cb522a68c4b07219daecb4170f0a0:wathna_new/cnn_torch.py
 
-    loss, grads = 0, {}
+    # loss = box_loss.mean() + iou_loss.mean() + class_loss.mean()
 
-    loss, dout = softmax_loss(scores, y)
+    # dout = loss.backward()
 
+    if y is None:
+      return delta_pred, conf_pred, class_pred
 
-    for i in range(self.num_layers):
-      if self.batchnorm:
-        if i <= (self.num_layers-2):
-          loss += (self.params['gamma{}'.format(i)]*self.params['gamma{}'.format(i)]).sum()*self.reg
-      loss += (self.params['W{}'.format(i)]*self.params['W{}'.format(i)]).sum()*self.reg
-    last_dout, dw, db  = FastConv.backward(dout, cache['{}'.format(i)])
-    grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
-    grads['b{}'.format(i)] = db
-    for i in range(i-1,-1,-1):
-      if i in self.max_pools:
-        if self.batchnorm:
-          last_dout, dw, db, dgamma1,dbetta1  = Conv_BatchNorm_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-          grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
-          grads['b{}'.format(i)] = db
-          grads['beta{}'.format(i)] = dbetta1
-          grads['gamma{}'.format(i)] = dgamma1 + 2*self.params['gamma{}'.format(i)]*self.reg
-        else:  
-          last_dout, dw, db  = Conv_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-          grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
-          grads['b{}'.format(i)] = db
-      else:
-        if self.batchnorm:
-          last_dout, dw, db,dgamma1,dbetta1  = Conv_BatchNorm_ReLU.backward(last_dout, cache['{}'.format(i)])
-          grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
-          grads['b{}'.format(i)] = db
-          grads['beta{}'.format(i)] = dbetta1
-          grads['gamma{}'.format(i)] = dgamma1 + 2*self.params['gamma{}'.format(i)]*self.reg
-        else:
-          last_dout, dw, db  = Conv_ReLU.backward(last_dout, cache['{}'.format(i)])
-          grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
-          grads['b{}'.format(i)] = db
+    # loss, grads = 0, {}
+
+    # loss, dout = softmax_loss(scores, y)
+
+    # return loss, dout
+
+    # loss = 
+
+    # for i in range(self.num_layers):
+    #   if self.batchnorm:
+    #     if i <= (self.num_layers-2):
+    #       loss += (self.params['gamma{}'.format(i)]*self.params['gamma{}'.format(i)]).sum()*self.reg
+    #   loss += (self.params['W{}'.format(i)]*self.params['W{}'.format(i)]).sum()*self.reg
+    # last_dout, dw, db  = FastConv.backward(dout, cache['{}'.format(i)])
+    # grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
+    # grads['b{}'.format(i)] = db
+    # for i in range(i-1,-1,-1):
+    #   if i in self.max_pools:
+    #     if self.batchnorm:
+    #       last_dout, dw, db, dgamma1,dbetta1  = Conv_BatchNorm_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
+    #       grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
+    #       grads['b{}'.format(i)] = db
+    #       grads['beta{}'.format(i)] = dbetta1
+    #       grads['gamma{}'.format(i)] = dgamma1 + 2*self.params['gamma{}'.format(i)]*self.reg
+    #     else:  
+    #       last_dout, dw, db  = Conv_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
+    #       grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
+    #       grads['b{}'.format(i)] = db
+    #   else:
+    #     if self.batchnorm:
+    #       last_dout, dw, db,dgamma1,dbetta1  = Conv_BatchNorm_ReLU.backward(last_dout, cache['{}'.format(i)])
+    #       grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
+    #       grads['b{}'.format(i)] = db
+    #       grads['beta{}'.format(i)] = dbetta1
+    #       grads['gamma{}'.format(i)] = dgamma1 + 2*self.params['gamma{}'.format(i)]*self.reg
+    #     else:
+    #       last_dout, dw, db  = Conv_ReLU.backward(last_dout, cache['{}'.format(i)])
+    #       grads['W{}'.format(i)] = dw + 2*self.params['W{}'.format(i)]*self.reg
+    #       grads['b{}'.format(i)] = db
 
 
     return scores, loss, grads
@@ -1166,3 +1182,4 @@ class ReLU(object):
         dx = dout * dl
 
         return dx
+

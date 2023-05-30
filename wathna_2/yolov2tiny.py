@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from loss import build_target, yolo_loss
+
 
 
 class Yolov2(nn.Module):
@@ -87,6 +89,18 @@ class Yolov2(nn.Module):
         class_pred = F.softmax(class_score, dim=-1)
         delta_pred = torch.cat([xy_pred, hw_pred], dim=-1)
 
+        if training:
+            output_variable = (delta_pred, conf_pred, class_score)
+            output_data = [v.data for v in output_variable]
+            gt_data = (gt_boxes, gt_classes, num_boxes)
+            target_data = build_target(output_data, gt_data, h, w)
+
+            target_variable = [v for v in target_data]
+            box_loss, iou_loss, class_loss = yolo_loss(output_variable, target_variable)
+
+            return box_loss, iou_loss, class_loss
+
+
         return delta_pred, conf_pred, class_pred
 
 if __name__ == '__main__':
@@ -94,8 +108,15 @@ if __name__ == '__main__':
     np.random.seed(0)
     im = np.random.randn(1, 3, 416, 416)
     im_variable = torch.from_numpy(im).float()
-    out = model(im_variable)
-    delta_pred, conf_pred, class_pred = out
-    print('delta_pred size:', delta_pred.size())
-    print('conf_pred size:', conf_pred.size())
-    print('class_pred size:', class_pred.size())
+    boxes = torch.randn(2, 64, 10, 4)
+    gt_classes = torch.randn(2, 64, 10)
+    num_obj = torch.ones(2, 64, 1)
+    out = model(im_variable, gt_boxes=boxes, gt_classes=gt_classes, num_boxes=num_obj, training=True)
+    box_loss, iou_loss, class_loss = out
+    # delta_pred, conf_pred, class_pred = out
+    print('box_loss', box_loss)
+    print('iou_loss', iou_loss)
+    print('class_loss', class_loss)
+    # print('delta_pred size:', delta_pred.size())
+    # print('conf_pred size:', conf_pred.size())
+    # print('class_pred size:', class_pred.size())

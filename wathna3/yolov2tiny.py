@@ -396,12 +396,11 @@ def get_dataset(datasetnames):
 
 train_dataset = get_dataset(imdb_name)
 
-
 train_dataloader = DataLoader(train_dataset, batch_size=64,
                                 shuffle=True, num_workers=2,
                                 collate_fn=detection_collate, drop_last=True)
-
 train_data_iter = iter(train_dataloader)
+
 im_data, gt_boxes, gt_classes, num_obj = next(train_data_iter)
 
 im_data = im_data[0].unsqueeze(0)
@@ -409,12 +408,8 @@ gt_boxes = gt_boxes[0].unsqueeze(0)
 gt_classes = gt_classes[0].unsqueeze(0)
 num_obj = num_obj[0].unsqueeze(0)
 
-
-
-
 if __name__ == '__main__':
     # im = np.random.randn(1, 3, 416, 416)
-
     # box_loss, iou_loss, class_loss = scratch.loss(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
     scores, loss, grad = scratch.loss(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
     # print(model.conv9.weight.shape)

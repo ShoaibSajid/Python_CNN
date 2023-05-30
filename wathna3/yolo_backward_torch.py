@@ -736,31 +736,62 @@ class DeepConvNetTorch(object):
     slowpool_param = {'pool_height':2, 'pool_width':2, 'stride': 1}
     cache = {}
     out = X
-    for i in range(self.num_layers-1):
-      # print(i)
-      # print(out.shape)
-      if i in self.max_pools:
-        # print('max_pool')
-        if self.batchnorm:
-          #print('batch_pool')
-          out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward(out, self.params['W{}'.format(i)], self.params['gamma{}'.format(i)], self.params['beta{}'.format(i)], conv_param, self.bn_params[i],pool_param) 
-        else:  
-          out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward(out,self.params['W{}'.format(i)], conv_param,pool_param) 
-      else:
-        if self.slowpool and i == 6 :
-          # print(self.num_filters[i])
-          out = F.pad(out, (0, 1, 0, 1))
-          out, cache['{}'.format(i)] = FastMaxPool.forward(out, slowpool_param)
-        if self.batchnorm:
-          #print('batch_without_pool')
-          out, cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward(out, self.params['W{}'.format(i)], 
-          self.params['gamma{}'.format(i)],self.params['beta{}'.format(i)],conv_param,self.bn_params[i]) 
-        else:
-          out,cache['{}'.format(i)] = Conv_ReLU.forward(out, self.params['W{}'.format(i)], conv_param) 
+    
+    # # Commenting out the loop to replace with simplified statements
+    # for i in range(self.num_layers-1):
+    #   # print(i)
+    #   # print(out.shape)
+    #   if i in self.max_pools:
+    #     # print('max_pool')
+    #     if self.batchnorm:
+    #       print('Conv_BatchNorm_ReLU_Pool')
+    #       out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward( out, 
+    #                                                                     self.params['W{}'.format(i)], 
+    #                                                                     self.params['gamma{}'.format(i)], 
+    #                                                                     self.params['beta{}'.format(i)], 
+    #                                                                     conv_param, 
+    #                                                                     self.bn_params[i],pool_param) 
+    #     else:  
+    #       print("Conv_ReLU_Pool")
+    #       out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward( out,
+    #                                                           self.params['W{}'.format(i)], 
+    #                                                           conv_param,pool_param) 
+    #   else:
+    #     if self.slowpool and i == 6 :
+    #       print('FastMaxPool')
+    #       # print(self.num_filters[i])
+    #       out = F.pad(out, (0, 1, 0, 1))
+    #       out, cache['{}'.format(i)] = FastMaxPool.forward(out, slowpool_param)
+    #     if self.batchnorm:
+    #       print('Conv_BatchNorm_ReLU')
+    #       out, cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward( out, 
+    #                                                                 self.params['W{}'.format(i)],
+    #                                                                 self.params['gamma{}'.format(i)],
+    #                                                                 self.params['beta{}'.format(i)],
+    #                                                                 conv_param,
+    #                                                                 self.bn_params[i]) 
+    #     else:
+    #       print('Conv_ReLU')
+    #       out,cache['{}'.format(i)] = Conv_ReLU.forward(out, self.params['W{}'.format(i)], conv_param) 
+ 
 
-    i+=1
-    conv_param['pad'] = 0
-    out1, cache['{}'.format(i)] = FastConvWB.forward(out, self.params['W{}'.format(i)], self.params['b{}'.format(i)], conv_param)
+    # Forward Propagation simplified code
+    Conv1 , cache['0']  = Conv_BatchNorm_ReLU_Pool.forward(X     , self.params['W0'], self.params['gamma0'],self.params['beta0'],conv_param,self.bn_params[0],pool_param)
+    Conv2 , cache['1']  = Conv_BatchNorm_ReLU_Pool.forward(Conv1 , self.params['W1'], self.params['gamma1'],self.params['beta1'],conv_param,self.bn_params[1],pool_param)
+    Conv3 , cache['2']  = Conv_BatchNorm_ReLU_Pool.forward(Conv2 , self.params['W2'], self.params['gamma2'],self.params['beta2'],conv_param,self.bn_params[2],pool_param)
+    Conv4 , cache['3']  = Conv_BatchNorm_ReLU_Pool.forward(Conv3 , self.params['W3'], self.params['gamma3'],self.params['beta3'],conv_param,self.bn_params[3],pool_param)
+    Conv5 , cache['4']  = Conv_BatchNorm_ReLU_Pool.forward(Conv4 , self.params['W4'], self.params['gamma4'],self.params['beta4'],conv_param,self.bn_params[4],pool_param)
+    Conv5 , cache['5']  = Conv_BatchNorm_ReLU.forward     (Conv5 , self.params['W5'], self.params['gamma5'],self.params['beta5'],conv_param,self.bn_params[5]) 
+    Conv5               = F.pad                           (Conv5 , (0, 1, 0, 1))
+    Conv6 , cache['60'] = MaxPool.forward                 (Conv5 , slowpool_param)
+    Conv7 , cache['6']  = Conv_BatchNorm_ReLU.forward     (Conv6 , self.params['W6'], self.params['gamma6'],self.params['beta6'],conv_param,self.bn_params[6]) 
+    Conv8 , cache['7']  = Conv_BatchNorm_ReLU.forward     (Conv7 , self.params['W7'], self.params['gamma7'],self.params['beta7'],conv_param,self.bn_params[7]) 
+    conv_param['pad']   = 0
+    Conv9 , cache['8']  = FastConvWB.forward              (Conv8 , self.params['W8'], self.params['b8']                         ,conv_param)
+    
+    out = Conv9
+
+
 
 
     model_ll = last_layer()

@@ -789,13 +789,10 @@ class DeepConvNetTorch(object):
     conv_param['pad']   = 0
     Conv9 , cache['8']  = FastConvWB.forward              (Conv8 , self.params['W8'], self.params['b8']                         ,conv_param)
     
-    out = Conv9
-
-
-
-
+    # out = Conv9 # Not used
+    
     model_ll = last_layer()
-    out = model_ll(out)
+    out = model_ll(Conv8)
 
 
 

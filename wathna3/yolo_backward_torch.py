@@ -9,7 +9,6 @@ from config import config as cfg
 from util.bbox import generate_all_anchors, xywh2xxyy, box_transform_inv, box_ious, xxyy2xywh, box_transform
 import torch.nn.functional as F
 
-
 def build_target(output, gt_data, H, W):
     """
     Build the training target for output tensor
@@ -161,7 +160,6 @@ def build_target(output, gt_data, H, W):
            class_target.view(bsize, -1, 1).long(), \
            class_mask.view(bsize, -1, 1)
 
-
 def yolo_loss(output, target):
     """
     Build yolo loss
@@ -217,19 +215,6 @@ def yolo_loss(output, target):
 
     return box_loss, iou_loss, class_loss
 
-class last_layer(nn.Module):
-  def __init__(self):
-    super().__init__()
-
-    self.conv9 = nn.Conv2d(1024, 125, kernel_size=1, stride=1, padding=0, bias=True)
-
-  def forward(self, x):
-    
-    return self.conv9(x)
-
-
-
-
 def svm_loss(x, y):
   """
   Computes the loss and gradient using for multiclass SVM classification.
@@ -254,7 +239,6 @@ def svm_loss(x, y):
   dx /= N
   return loss, dx
 
-
 def softmax_loss(x, y):
   """
   Computes the loss and gradient for softmax classification.
@@ -278,6 +262,405 @@ def softmax_loss(x, y):
   dx /= N
   return loss, dx
 
+def kaiming_initializer(Din, Dout, K=None, relu=True, device='cpu',
+                        dtype=torch.float32):
+  """
+  Implement Kaiming initialization for linear and convolution layers.
+  
+  Inputs:
+  - Din, Dout: Integers giving the number of input and output dimensions for
+    this layer
+  - K: If K is None, then initialize weights for a linear layer with Din input
+    dimensions and Dout output dimensions. Otherwise if K is a nonnegative
+    integer then initialize the weights for a convolution layer with Din input
+    channels, Dout output channels, and a kernel size of KxK.
+  - relu: If ReLU=True, then initialize weights with a gain of 2 to account for
+    a ReLU nonlinearity (Kaiming initializaiton); otherwise initialize weights
+    with a gain of 1 (Xavier initialization).
+  - device, dtype: The device and datatype for the output tensor.
+
+  Returns:
+  - weight: A torch Tensor giving initialized weights for this layer. For a
+    linear layer it should have shape (Din, Dout); for a convolution layer it
+    should have shape (Dout, Din, K, K).
+  """
+  gain = 2. if relu else 1.
+  weight = None
+  if K is None:
+
+    weight_scale = gain/(Din)
+    weight = torch.zeros(Din,Dout, dtype=dtype,device = device)
+    weight += weight_scale*torch.randn(Din,Dout, dtype=dtype,device= device)
+    ###########################################################################
+    #                            END OF YOUR CODE                             #
+    ###########################################################################
+  else:
+
+    weight_scale = gain/(Din*K*K)
+    weight = torch.zeros(Din,Dout, K,K, dtype=dtype,device = device)
+    weight += weight_scale*torch.randn(Din,Dout, K,K, dtype=dtype,device= device)
+    ###########################################################################
+    #                            END OF YOUR CODE                             #
+    ###########################################################################
+  return weight
+
+class last_layer(nn.Module):
+  def __init__(self):
+    super().__init__()
+
+    self.conv9 = nn.Conv2d(1024, 125, kernel_size=1, stride=1, padding=0, bias=True)
+
+  def forward(self, x):
+    
+    return self.conv9(x)
+
+################################################################################
+################################################################################
+#########################   Python Implementations  ############################
+################################################################################
+################################################################################
+
+class DeepConvNetTorch(object): # Python based CNN Implementation
+  """
+  A convolutional neural network with an arbitrary number of convolutional
+  layers in VGG-Net style. All convolution layers will use kernel size 3 and 
+  padding 1 to preserve the feature map size, and all pooling layers will be
+  max pooling layers with 2x2 receptive fields and a stride of 2 to halve the
+  size of the feature map.
+
+  The network will have the following architecture:
+  
+  {conv - [batchnorm?] - relu - [pool?]} x (L - 1) - linear
+
+  Each {...} structure is a "macro layer" consisting of a convolution layer,
+  an optional batch normalization layer, a ReLU nonlinearity, and an optional
+  pooling layer. After L-1 such macro layers, a single fully-connected layer
+  is used to predict the class scores.
+
+  The network operates on minibatches of data that have shape (N, C, H, W)
+  consisting of N images, each with height H and width W and with C input
+  channels.
+  """
+  def __init__(self, input_dims=(3, 32, 32),
+               num_filters=[8, 8, 8, 8, 8],
+               max_pools=[0, 1, 2, 3, 4],
+               batchnorm=False,
+               slowpool=True,
+               num_classes=10, weight_scale=1e-3, reg=0.0,
+               weight_initializer=None,
+               dtype=torch.float, device='cpu'):
+    """
+    Initialize a new network.
+
+    Inputs:
+    - input_dims: Tuple (C, H, W) giving size of input data
+    - num_filters: List of length (L - 1) giving the number of convolutional
+      filters to use in each macro layer.
+    - max_pools: List of integers giving the indices of the macro layers that
+      should have max pooling (zero-indexed).
+    - batchnorm: Whether to include batch normalization in each macro layer
+    - num_classes: Number of scores to produce from the final linear layer.
+    - weight_scale: Scalar giving standard deviation for random initialization
+      of weights, or the string "kaiming" to use Kaiming initialization instead
+    - reg: Scalar giving L2 regularization strength. L2 regularization should
+      only be applied to convolutional and fully-connected weight matrices;
+      it should not be applied to biases or to batchnorm scale and shifts.
+    - dtype: A torch data type object; all computations will be performed using
+      this datatype. float is faster but less accurate, so you should use
+      double for numeric gradient checking.
+    - device: device to use for computation. 'cpu' or 'cuda'    
+    """
+    self.p = {}
+    self.num_layers = len(num_filters)+1
+    self.max_pools = max_pools
+    self.batchnorm = batchnorm
+    self.reg = reg
+    self.dtype = dtype
+    self.slowpool = slowpool
+    self.num_filters = num_filters
+  
+    if device == 'cuda':
+      device = 'cuda:0'
+    
+    ############################################################################
+    # TODO: Initialize the parameters for the DeepConvNet. All weights,        #
+    # biases, and batchnorm scale and shift parameters should be stored in the #
+    # dictionary self.p.                                                  #
+    #                                                                          #
+    # Weights for conv and fully-connected layers should be initialized        #
+    # according to weight_scale. Biases should be initialized to zero.         #
+    # Batchnorm scale (gamma) and shift (beta) parameters should be initilized #
+    # to ones and zeros respectively.                                          #           
+    ############################################################################
+    # Replace "pass" statement with your code
+    filter_size = 3
+    conv_param = {'stride': 1, 'pad': 1}
+    pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
+    pred_filters,H_out,W_out = input_dims
+    HH = filter_size
+    WW =  filter_size
+    # print('num_filters:', num_filters)
+    for i,num_filter in enumerate(num_filters):
+      
+      H_out = int(1 + (H_out + 2 * conv_param['pad'] - HH) / conv_param['stride'])
+      W_out = int(1 + (W_out + 2 * conv_param['pad'] - WW) / conv_param['stride'])
+      
+      if self.batchnorm:
+        self.p['running_mean{}'.format(i)]  = torch.zeros(num_filter, dtype=dtype, device=device)
+        self.p['running_var{}'.format(i)]   = torch.zeros(num_filter, dtype=dtype, device=device)
+        self.p['gamma{}'.format(i)]         = 0.01*torch.randn(num_filter, device =device, dtype = dtype)
+        self.p['beta{}'.format(i)]          = 0.01*torch.randn(num_filter, device =device, dtype = dtype)
+        
+      if i in max_pools:
+        H_out = int(1 + (H_out - pool_param['pool_height']) / pool_param['stride'])
+        W_out = int(1 + (W_out - pool_param['pool_width']) / pool_param['stride'])
+      
+      if weight_scale == 'kaiming':
+        self.p['W{}'.format(i)]  = kaiming_initializer(num_filter, pred_filters, K=filter_size, relu=True, device=device,dtype=dtype)
+      else:
+        self.p['W{}'.format(i)]  = torch.zeros(num_filter,pred_filters, filter_size,filter_size, dtype=dtype,device = device)
+        self.p['W{}'.format(i)] += weight_scale*torch.randn(num_filter,pred_filters, filter_size,filter_size, dtype=dtype,device= device)
+      
+      pred_filters = num_filter
+      
+      # print('W_out',W_out)
+      #filter_size = W_out
+    i+=1
+    if weight_scale == 'kaiming':
+        self.p['W{}'.format(i)] = kaiming_initializer(125, 1024, K=1, relu=False, device=device,dtype=dtype)
+    self.p['b{}'.format(i)] = torch.zeros(125, dtype=dtype,device= device)
+    ############################################################################
+    #                             END OF YOUR CODE                             #
+    ############################################################################
+
+    # With batch normalization we need to keep track of running means and
+    # variances, so we need to pass a special bn_param object to each batch
+    # normalization layer. You should pass self.bn_params[0] to the forward pass
+    # of the first batch normalization layer, self.bn_params[1] to the forward
+    # pass of the second batch normalization layer, etc.
+    self.bn_params = []
+    if self.batchnorm:
+      self.bn_params = [{'mode': 'train'} for _ in range(len(num_filters))]
+      for i, num_filter in enumerate(num_filters):
+        self.bn_params[i]['running_mean'] = torch.zeros(num_filter, dtype=dtype, device=device)
+        self.bn_params[i]['running_var'] = torch.zeros(num_filter, dtype=dtype, device=device)
+
+    # Check that we got the right number of parameters
+    if not self.batchnorm:
+      params_per_macro_layer = 2  # weight and bias
+    else:
+      params_per_macro_layer = 3  # weight, bias, scale, shift
+    num_params = params_per_macro_layer * len(num_filters) + 2
+    msg = 'self.p has the wrong number of elements. Got %d; expected %d'
+    msg = msg % (len(self.p), num_params)
+    # assert len(self.p) == num_params, msg
+
+    # Check that all parameters have the correct device and dtype:
+    for k, p in self.p.items():
+      msg = 'p "%s" has device %r; should be %r' % (k, p.device, device)
+      assert p.device == torch.device(device), msg
+      msg = 'p "%s" has dtype %r; should be %r' % (k, p.dtype, dtype)
+      assert p.dtype == dtype, msg
+
+    # pass conv_param to the forward pass for the convolutional layer
+    # Padding and stride chosen to preserve the input spatial size
+    filter_size = 3
+    for i,num_filter in enumerate(num_filters):
+      self.p[f'conv{i}'] = {'stride': 1, 'pad': (filter_size - 1) // 2}
+    self.p[f'conv{8}'] = {'stride': 1, 'pad': (filter_size - 1) // 2}
+    self.p[f'conv{8}']['pad']   = 0
+
+  def save(self, path):
+    checkpoint = {
+      'reg': self.reg,
+      'dtype': self.dtype,
+      'params': self.p,
+      'num_layers': self.num_layers,
+      'max_pools': self.max_pools,
+      'batchnorm': self.batchnorm,
+      'bn_params': self.bn_params,
+    }
+    torch.save(checkpoint, path)
+    print("Saved in {}".format(path))
+
+  def load(self, path, dtype, device):
+    checkpoint = torch.load(path, map_location='cpu')
+    self.p = checkpoint['params']
+    self.dtype = dtype
+    self.reg = checkpoint['reg']
+    self.num_layers = checkpoint['num_layers']
+    self.max_pools = checkpoint['max_pools']
+    self.batchnorm = checkpoint['batchnorm']
+    self.bn_params = checkpoint['bn_params']
+
+
+    for p in self.p:
+      self.p[p] = self.p[p].type(dtype).to(device)
+
+    for i in range(len(self.bn_params)):
+      for p in ["running_mean", "running_var"]:
+        self.bn_params[i][p] = self.bn_params[i][p].type(dtype).to(device)
+
+    print("load checkpoint file: {}".format(path))
+
+  def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
+    """
+    Evaluate loss and gradient for the deep convolutional network.
+    Input / output: Same API as ThreeLayerConvNet.
+    """
+    
+    y = 1
+    X = X.to(self.dtype)
+    
+    mode = 'test' if y is None else 'train'
+    # Set train/test mode for batchnorm params since they behave differently during training and testing.
+    if self.batchnorm:
+      for bn_param in self.bn_params:
+        bn_param['mode'] = mode
+    # pass pool_param to the forward pass for the max-pooling layer
+    pool_param      = {'pool_height': 2, 'pool_width': 2,   'stride': 2}
+    slowpool_param  = {'pool_height':2,  'pool_width':2,    'stride': 1}
+    
+    scores = None
+    cache = {}
+    out = X
+    
+    # # Commenting out the loop to replace with simplified statements
+    if True:
+      pass
+      # for i in range(self.num_layers-1):
+      #   # print(i)
+      #   # print(out.shape)
+      #   if i in self.max_pools:
+      #     # print('max_pool')
+      #     if self.batchnorm:
+      #       print('Conv_BatchNorm_ReLU_Pool')
+      #       out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward( out, 
+      #                                                                     self.p['W{}'.format(i)], 
+      #                                                                     self.p['gamma{}'.format(i)], 
+      #                                                                     self.p['beta{}'.format(i)], 
+      #                                                                     conv_param, 
+      #                                                                     self.bn_params[i],pool_param) 
+      #     else:  
+      #       print("Conv_ReLU_Pool")
+      #       out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward( out,
+      #                                                           self.p['W{}'.format(i)], 
+      #                                                           conv_param,pool_param) 
+      #   else:
+      #     if self.slowpool and i == 6 :
+      #       print('FastMaxPool')
+      #       # print(self.num_filters[i])
+      #       out = F.pad(out, (0, 1, 0, 1))
+      #       out, cache['{}'.format(i)] = FastMaxPool.forward(out, slowpool_param)
+      #     if self.batchnorm:
+      #       print('Conv_BatchNorm_ReLU')
+      #       out, cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward( out, 
+      #                                                                 self.p['W{}'.format(i)],
+      #                                                                 self.p['gamma{}'.format(i)],
+      #                                                                 self.p['beta{}'.format(i)],
+      #                                                                 conv_param,
+      #                                                                 self.bn_params[i]) 
+      #     else:
+      #       print('Conv_ReLU')
+      #       out,cache['{}'.format(i)] = Conv_ReLU.forward(out, self.p['W{}'.format(i)], conv_param) 
+  
+    # Forward Propagation simplified code ---- ON CHIP
+    if True:
+      Conv1 , cache['0']  = Conv_BatchNorm_ReLU_Pool.forward(X     , self.p['W0'], self.p['gamma0'],self.p['beta0'],self.p[f'conv0'],self.bn_params[0],pool_param)
+      Conv2 , cache['1']  = Conv_BatchNorm_ReLU_Pool.forward(Conv1 , self.p['W1'], self.p['gamma1'],self.p['beta1'],self.p[f'conv1'],self.bn_params[1],pool_param)
+      Conv3 , cache['2']  = Conv_BatchNorm_ReLU_Pool.forward(Conv2 , self.p['W2'], self.p['gamma2'],self.p['beta2'],self.p[f'conv2'],self.bn_params[2],pool_param)
+      Conv4 , cache['3']  = Conv_BatchNorm_ReLU_Pool.forward(Conv3 , self.p['W3'], self.p['gamma3'],self.p['beta3'],self.p[f'conv3'],self.bn_params[3],pool_param)
+      Conv5 , cache['4']  = Conv_BatchNorm_ReLU_Pool.forward(Conv4 , self.p['W4'], self.p['gamma4'],self.p['beta4'],self.p[f'conv4'],self.bn_params[4],pool_param)
+      Conv5 , cache['5']  = Conv_BatchNorm_ReLU.forward     (Conv5 , self.p['W5'], self.p['gamma5'],self.p['beta5'],self.p[f'conv5'],self.bn_params[5]) 
+      Conv5               = F.pad                           (Conv5 , (0, 1, 0, 1))
+      Conv6 , cache['60'] = MaxPool.forward                 (Conv5 , slowpool_param)
+      Conv7 , cache['6']  = Conv_BatchNorm_ReLU.forward     (Conv6 , self.p['W6'], self.p['gamma6'],self.p['beta6'],self.p[f'conv6'],self.bn_params[6]) 
+      Conv8 , cache['7']  = Conv_BatchNorm_ReLU.forward     (Conv7 , self.p['W7'], self.p['gamma7'],self.p['beta7'],self.p[f'conv7'],self.bn_params[7]) 
+      # conv_param['pad']   = 0
+      Conv9 , cache['8']  = FastConvWB.forward              (Conv8 , self.p['W8'], self.p['b8']                    ,self.p[f'conv8'])
+      # model_ll = last_layer()
+      # load weights to last_layer()
+      # Conv9 = model_ll(Conv8)
+      out = Conv9 
+    # Return the output of forward propagation
+    
+    #  Compute_Loss_On_system
+    if True:
+      # Reshape the output 
+      scores          = out
+      bsize, _, h, w  = out.shape
+      out             = out.permute(0, 2, 3, 1).contiguous().view(bsize, 13 * 13 * 5, 5 + 20)
+
+      # Segregate the output into [x,y,w,h], confidence, classes
+      # BBox
+      xy_pred     = torch.sigmoid (out[:, :, 0:2])
+      hw_pred     = torch.exp     (out[:, :, 2:4])
+      bbox_pred   = torch.cat([xy_pred, hw_pred], dim=-1)
+      # Confidence
+      conf_pred   = torch.sigmoid (out[:, :, 4:5])
+      # Class
+      class_score = out[:, :, 5:]
+      class_pred  = F.softmax(class_score, dim=-1)
+
+      # Reshape into output and target variable for yolo_loss computation
+      # output_variable: tuple[Tensor, Tensor, Any] = (torch.cat([torch.sigmoid(out[:, :, 0:2]), torch.exp(out[:, :, 2:4])], dim=-1), torch.sigmoid(out[:, :, 4:5]), out[:, :, 5:])
+      # Predicted / Output Data
+      output_variable = (bbox_pred, conf_pred, class_score)
+      output_data     = [v.data for v in output_variable]
+      # GT Data
+      gt_data         = (gt_boxes, gt_classes, num_boxes)
+      # Target data for comparison
+      target_data     = build_target(output_data, gt_data, h, w)
+      target_variable = [v for v in target_data]
+
+      box_loss, iou_loss, class_loss = yolo_loss(output_variable, target_variable)
+      loss = box_loss + iou_loss + class_loss
+      # loss, dout = yolo_loss(output_variable, target_variable)
+      
+      # Calculate loss gradients
+      grads = {}
+      out = scores
+      out.retain_grad()
+      loss.backward(retain_graph=True)
+      dout = out.grad
+      loss_gradients = dout
+    # System will return dout / loss derivatives
+    
+    # Backward Propagation ---- ON CHIP
+    if True: 
+      # grads['W{}'.format(i)] = model_ll.conv9.weight.grad
+      # grads['b{}'.format(i)] = model_ll.conv9.bias.grad
+      last_dout, dw, db  = FastConvWB.backward(dout, cache['8'])
+      grads['W8'] = dw
+      grads['b8'] = db
+      # print(dw, db)
+      # print(last_dout.shape)
+      # for i in range(i-1, -1, -1):
+      #   print(len(cache['{}'.format(i)]))
+      for i in range(i-1,-1,-1):
+        if i in self.max_pools:
+          if self.batchnorm:
+            last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
+            grads['W{}'.format(i)] = dw
+            grads['beta{}'.format(i)] = dbetta1
+            grads['gamma{}'.format(i)] = dgamma1
+            # print(dw.shape)
+          else:  
+            last_dout, dw  = Conv_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
+            grads['W{}'.format(i)] = dw
+            # print(dw.shape)
+        else:
+          if self.batchnorm:
+            last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU.backward(last_dout, cache['{}'.format(i)])
+            grads['W{}'.format(i)] = dw
+            # print(dw.shape)
+            grads['beta{}'.format(i)] = dbetta1
+            grads['gamma{}'.format(i)] = dgamma1
+          else:
+            last_dout, dw  = Conv_ReLU.backward(last_dout, cache['{}'.format(i)])
+            grads['W{}'.format(i)] = dw
+      # return scores, loss, grads
+  
 class Conv(object):
 
   @staticmethod
@@ -362,7 +745,6 @@ class Conv(object):
     print(dx.shape)   
 
     return dx, dw
-
 
 class ConvB(object):
 
@@ -523,417 +905,6 @@ class MaxPool(object):
             dx[n,:,height*stride:height*stride+pool_height,width*stride:width*stride+pool_width] = local_dw.reshape(shape_local_x)
 
     return dx
-
-class DeepConvNetTorch(object):
-  """
-  A convolutional neural network with an arbitrary number of convolutional
-  layers in VGG-Net style. All convolution layers will use kernel size 3 and 
-  padding 1 to preserve the feature map size, and all pooling layers will be
-  max pooling layers with 2x2 receptive fields and a stride of 2 to halve the
-  size of the feature map.
-
-  The network will have the following architecture:
-  
-  {conv - [batchnorm?] - relu - [pool?]} x (L - 1) - linear
-
-  Each {...} structure is a "macro layer" consisting of a convolution layer,
-  an optional batch normalization layer, a ReLU nonlinearity, and an optional
-  pooling layer. After L-1 such macro layers, a single fully-connected layer
-  is used to predict the class scores.
-
-  The network operates on minibatches of data that have shape (N, C, H, W)
-  consisting of N images, each with height H and width W and with C input
-  channels.
-  """
-  def __init__(self, input_dims=(3, 32, 32),
-               num_filters=[8, 8, 8, 8, 8],
-               max_pools=[0, 1, 2, 3, 4],
-               batchnorm=False,
-               slowpool=True,
-               num_classes=10, weight_scale=1e-3, reg=0.0,
-               weight_initializer=None,
-               dtype=torch.float, device='cpu'):
-    """
-    Initialize a new network.
-
-    Inputs:
-    - input_dims: Tuple (C, H, W) giving size of input data
-    - num_filters: List of length (L - 1) giving the number of convolutional
-      filters to use in each macro layer.
-    - max_pools: List of integers giving the indices of the macro layers that
-      should have max pooling (zero-indexed).
-    - batchnorm: Whether to include batch normalization in each macro layer
-    - num_classes: Number of scores to produce from the final linear layer.
-    - weight_scale: Scalar giving standard deviation for random initialization
-      of weights, or the string "kaiming" to use Kaiming initialization instead
-    - reg: Scalar giving L2 regularization strength. L2 regularization should
-      only be applied to convolutional and fully-connected weight matrices;
-      it should not be applied to biases or to batchnorm scale and shifts.
-    - dtype: A torch data type object; all computations will be performed using
-      this datatype. float is faster but less accurate, so you should use
-      double for numeric gradient checking.
-    - device: device to use for computation. 'cpu' or 'cuda'    
-    """
-    self.params = {}
-    self.num_layers = len(num_filters)+1
-    self.max_pools = max_pools
-    self.batchnorm = batchnorm
-    self.reg = reg
-    self.dtype = dtype
-    self.slowpool = slowpool
-    self.num_filters = num_filters
-  
-    if device == 'cuda':
-      device = 'cuda:0'
-    
-    ############################################################################
-    # TODO: Initialize the parameters for the DeepConvNet. All weights,        #
-    # biases, and batchnorm scale and shift parameters should be stored in the #
-    # dictionary self.params.                                                  #
-    #                                                                          #
-    # Weights for conv and fully-connected layers should be initialized        #
-    # according to weight_scale. Biases should be initialized to zero.         #
-    # Batchnorm scale (gamma) and shift (beta) parameters should be initilized #
-    # to ones and zeros respectively.                                          #           
-    ############################################################################
-    # Replace "pass" statement with your code
-    filter_size = 3
-    conv_param = {'stride': 1, 'pad': 1}
-    pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
-    pred_filters,H_out,W_out = input_dims
-    HH = filter_size
-    WW =  filter_size
-    # print('num_filters:', num_filters)
-    for i,num_filter in enumerate(num_filters):
-      H_out = int(1 + (H_out + 2 * conv_param['pad'] - HH) / conv_param['stride'])
-      W_out = int(1 + (W_out + 2 * conv_param['pad'] - WW) / conv_param['stride'])
-      if self.batchnorm:
-        self.params['running_mean{}'.format(i)] = torch.zeros(num_filter, dtype=dtype, device=device)
-        self.params['running_var{}'.format(i)] = torch.zeros(num_filter, dtype=dtype, device=device)
-        self.params['gamma{}'.format(i)] =0.01*torch.randn(num_filter, device =device, dtype = dtype)
-        self.params['beta{}'.format(i)] = 0.01*torch.randn(num_filter, device =device, dtype = dtype)
-      if i in max_pools:
-        H_out = int(1 + (H_out - pool_param['pool_height']) / pool_param['stride'])
-        W_out = int(1 + (W_out - pool_param['pool_width']) / pool_param['stride'])
-      if weight_scale == 'kaiming':
-        self.params['W{}'.format(i)] = kaiming_initializer(num_filter, pred_filters, K=filter_size, relu=True, device=device,dtype=dtype)
-      else:
-        self.params['W{}'.format(i)] = torch.zeros(num_filter,pred_filters, filter_size,filter_size, dtype=dtype,device = device)
-        self.params['W{}'.format(i)] += weight_scale*torch.randn(num_filter,pred_filters, filter_size,filter_size, dtype=dtype,device= device)
-      pred_filters = num_filter
-      # print('W_out',W_out)
-      #filter_size = W_out
-    i+=1
-    # if weight_scale == 'kaiming':
-    #     self.params['W{}'.format(i)] = kaiming_initializer(num_filter*H_out*W_out, num_classes, relu=False, device=device,dtype=dtype)
-    # else:
-    #     self.params['W{}'.format(i)] = torch.zeros(num_filter*H_out*W_out, num_classes, dtype=dtype,device = device)
-    #     self.params['W{}'.format(i)] += weight_scale*torch.randn(num_filter*H_out*W_out, num_classes, dtype=dtype,device= device)
-    # self.params['b{}'.format(i)] = torch.zeros(num_classes, dtype=dtype,device= device)
-    # print(i)
-    if weight_scale == 'kaiming':
-        self.params['W{}'.format(i)] = kaiming_initializer(125, 1024, K=1, relu=False, device=device,dtype=dtype)
-    # else:
-    #     self.params['W{}'.format(i)] = torch.zeros(num_filter*H_out*W_out, num_classes, dtype=dtype,device = device)
-    #     self.params['W{}'.format(i)] += weight_scale*torch.randn(num_filter*H_out*W_out, num_classes, dtype=dtype,device= device)
-    self.params['b{}'.format(i)] = torch.zeros(125, dtype=dtype,device= device)
-    ############################################################################
-    #                             END OF YOUR CODE                             #
-    ############################################################################
-
-    # With batch normalization we need to keep track of running means and
-    # variances, so we need to pass a special bn_param object to each batch
-    # normalization layer. You should pass self.bn_params[0] to the forward pass
-    # of the first batch normalization layer, self.bn_params[1] to the forward
-    # pass of the second batch normalization layer, etc.
-    self.bn_params = []
-    if self.batchnorm:
-      self.bn_params = [{'mode': 'train'} for _ in range(len(num_filters))]
-      for i, num_filter in enumerate(num_filters):
-        self.bn_params[i]['running_mean'] = torch.zeros(num_filter, dtype=dtype, device=device)
-        self.bn_params[i]['running_var'] = torch.zeros(num_filter, dtype=dtype, device=device)
-
-    # Check that we got the right number of parameters
-    if not self.batchnorm:
-      params_per_macro_layer = 2  # weight and bias
-    else:
-      params_per_macro_layer = 3  # weight, bias, scale, shift
-    num_params = params_per_macro_layer * len(num_filters) + 2
-    msg = 'self.params has the wrong number of elements. Got %d; expected %d'
-    msg = msg % (len(self.params), num_params)
-    # assert len(self.params) == num_params, msg
-
-    # Check that all parameters have the correct device and dtype:
-    for k, param in self.params.items():
-      msg = 'param "%s" has device %r; should be %r' % (k, param.device, device)
-      assert param.device == torch.device(device), msg
-      msg = 'param "%s" has dtype %r; should be %r' % (k, param.dtype, dtype)
-      assert param.dtype == dtype, msg
-
-
-  def save(self, path):
-    checkpoint = {
-      'reg': self.reg,
-      'dtype': self.dtype,
-      'params': self.params,
-      'num_layers': self.num_layers,
-      'max_pools': self.max_pools,
-      'batchnorm': self.batchnorm,
-      'bn_params': self.bn_params,
-    }
-      
-    torch.save(checkpoint, path)
-    print("Saved in {}".format(path))
-
-
-  def load(self, path, dtype, device):
-    checkpoint = torch.load(path, map_location='cpu')
-    self.params = checkpoint['params']
-    self.dtype = dtype
-    self.reg = checkpoint['reg']
-    self.num_layers = checkpoint['num_layers']
-    self.max_pools = checkpoint['max_pools']
-    self.batchnorm = checkpoint['batchnorm']
-    self.bn_params = checkpoint['bn_params']
-
-
-    for p in self.params:
-      self.params[p] = self.params[p].type(dtype).to(device)
-
-    for i in range(len(self.bn_params)):
-      for p in ["running_mean", "running_var"]:
-        self.bn_params[i][p] = self.bn_params[i][p].type(dtype).to(device)
-
-    print("load checkpoint file: {}".format(path))
-
-
-  def loss(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
-    """
-    Evaluate loss and gradient for the deep convolutional network.
-    Input / output: Same API as ThreeLayerConvNet.
-    """
-    y = 1
-    X = X.to(self.dtype)
-    mode = 'test' if y is None else 'train'
-
-    # Set train/test mode for batchnorm params since they
-    # behave differently during training and testing.
-    if self.batchnorm:
-      for bn_param in self.bn_params:
-        bn_param['mode'] = mode
-
-    scores = None
-    # pass conv_param to the forward pass for the convolutional layer
-    # Padding and stride chosen to preserve the input spatial size
-    filter_size = 3
-    conv_param = {'stride': 1, 'pad': (filter_size - 1) // 2}
-
-    # pass pool_param to the forward pass for the max-pooling layer
-    pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
-
-    scores = None
-
-    slowpool_param = {'pool_height':2, 'pool_width':2, 'stride': 1}
-    cache = {}
-    out = X
-    
-    # # Commenting out the loop to replace with simplified statements
-    # for i in range(self.num_layers-1):
-    #   # print(i)
-    #   # print(out.shape)
-    #   if i in self.max_pools:
-    #     # print('max_pool')
-    #     if self.batchnorm:
-    #       print('Conv_BatchNorm_ReLU_Pool')
-    #       out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward( out, 
-    #                                                                     self.params['W{}'.format(i)], 
-    #                                                                     self.params['gamma{}'.format(i)], 
-    #                                                                     self.params['beta{}'.format(i)], 
-    #                                                                     conv_param, 
-    #                                                                     self.bn_params[i],pool_param) 
-    #     else:  
-    #       print("Conv_ReLU_Pool")
-    #       out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward( out,
-    #                                                           self.params['W{}'.format(i)], 
-    #                                                           conv_param,pool_param) 
-    #   else:
-    #     if self.slowpool and i == 6 :
-    #       print('FastMaxPool')
-    #       # print(self.num_filters[i])
-    #       out = F.pad(out, (0, 1, 0, 1))
-    #       out, cache['{}'.format(i)] = FastMaxPool.forward(out, slowpool_param)
-    #     if self.batchnorm:
-    #       print('Conv_BatchNorm_ReLU')
-    #       out, cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward( out, 
-    #                                                                 self.params['W{}'.format(i)],
-    #                                                                 self.params['gamma{}'.format(i)],
-    #                                                                 self.params['beta{}'.format(i)],
-    #                                                                 conv_param,
-    #                                                                 self.bn_params[i]) 
-    #     else:
-    #       print('Conv_ReLU')
-    #       out,cache['{}'.format(i)] = Conv_ReLU.forward(out, self.params['W{}'.format(i)], conv_param) 
- 
-
-    # Forward Propagation simplified code
-    Conv1 , cache['0']  = Conv_BatchNorm_ReLU_Pool.forward(X     , self.params['W0'], self.params['gamma0'],self.params['beta0'],conv_param,self.bn_params[0],pool_param)
-    Conv2 , cache['1']  = Conv_BatchNorm_ReLU_Pool.forward(Conv1 , self.params['W1'], self.params['gamma1'],self.params['beta1'],conv_param,self.bn_params[1],pool_param)
-    Conv3 , cache['2']  = Conv_BatchNorm_ReLU_Pool.forward(Conv2 , self.params['W2'], self.params['gamma2'],self.params['beta2'],conv_param,self.bn_params[2],pool_param)
-    Conv4 , cache['3']  = Conv_BatchNorm_ReLU_Pool.forward(Conv3 , self.params['W3'], self.params['gamma3'],self.params['beta3'],conv_param,self.bn_params[3],pool_param)
-    Conv5 , cache['4']  = Conv_BatchNorm_ReLU_Pool.forward(Conv4 , self.params['W4'], self.params['gamma4'],self.params['beta4'],conv_param,self.bn_params[4],pool_param)
-    Conv5 , cache['5']  = Conv_BatchNorm_ReLU.forward     (Conv5 , self.params['W5'], self.params['gamma5'],self.params['beta5'],conv_param,self.bn_params[5]) 
-    Conv5               = F.pad                           (Conv5 , (0, 1, 0, 1))
-    Conv6 , cache['60'] = MaxPool.forward                 (Conv5 , slowpool_param)
-    Conv7 , cache['6']  = Conv_BatchNorm_ReLU.forward     (Conv6 , self.params['W6'], self.params['gamma6'],self.params['beta6'],conv_param,self.bn_params[6]) 
-    Conv8 , cache['7']  = Conv_BatchNorm_ReLU.forward     (Conv7 , self.params['W7'], self.params['gamma7'],self.params['beta7'],conv_param,self.bn_params[7]) 
-    conv_param['pad']   = 0
-    Conv9 , cache['8']  = FastConvWB.forward              (Conv8 , self.params['W8'], self.params['b8']                         ,conv_param)
-    
-    # out = Conv9 # Not used
-    
-    model_ll = last_layer()
-    out = model_ll(Conv8)
-
-
-
-    scores = out
-    bsize, _, h, w = out.shape
-    out = out.permute(0, 2, 3, 1).contiguous().view(bsize, 13 * 13 * 5, 5 + 20)
-
-    xy_pred = torch.sigmoid(out[:, :, 0:2])
-    conf_pred = torch.sigmoid(out[:, :, 4:5])
-    hw_pred = torch.exp(out[:, :, 2:4])
-    class_score = out[:, :, 5:]
-    class_pred = F.softmax(class_score, dim=-1)
-    delta_pred = torch.cat([xy_pred, hw_pred], dim=-1)
-
-    grads = {}
-
-    output_variable = (delta_pred, conf_pred, class_score)
-    # output_variable: tuple[Tensor, Tensor, Any] = (torch.cat([torch.sigmoid(out[:, :, 0:2]), torch.exp(out[:, :, 2:4])], dim=-1), torch.sigmoid(out[:, :, 4:5]), out[:, :, 5:])
-    output_data = [v.data for v in output_variable]
-    gt_data = (gt_boxes, gt_classes, num_boxes)
-    target_data = build_target(output_data, gt_data, h, w)
-
-    target_variable = [v for v in target_data]
-
-    box_loss, iou_loss, class_loss = yolo_loss(output_variable, target_variable)
-    # loss, dout = yolo_loss(output_variable, target_variable)
-    loss = box_loss + iou_loss + class_loss
-    
-    out = scores
-    out.retain_grad()
-    loss.backward()
-    dout = out.grad
-    # loss.backward(retain_graph=True)
-    # print(out.grad)
-    # print(dout)
-
-    # print(model_ll.conv9.weight.grad)
-    # print(model_ll.conv9.bias.grad)
-    
-    # box_loss.retain_grad()
-    # iou_loss.retain_grad()
-    # class_loss.retain_grad()
-    # out.retain_grad()
-    # box_loss.backward()
-    # out.retain_grad()
-    # loss.backward()
-    # dout = out.grad
-    # print(dout)
-    # loss.backward()
-
-    # print(box_loss.grad)
-
-    # loss = box_loss.mean() + iou_loss.mean() + class_loss.mean()
-
-    # dout = loss.backward()
-
-    # if y is None:
-    #   return delta_pred, conf_pred, class_pred
-
-    # loss, grads = 0, {}
-
-    # loss, dout = softmax_loss(scores, y)
-
-    # return loss, dout
-    last_dout, dw, db  = FastConvWB.backward(dout, cache['{}'.format(i)])
-    # grads['W{}'.format(i)] = model_ll.conv9.weight.grad
-    # grads['b{}'.format(i)] = model_ll.conv9.bias.grad
-    grads['W{}'.format(i)] = dw
-    grads['b{}'.format(i)] = db
-    # print(dw, db)
-    # print(last_dout.shape)
-    # for i in range(i-1, -1, -1):
-    #   print(len(cache['{}'.format(i)]))
-    for i in range(i-1,-1,-1):
-      if i in self.max_pools:
-        if self.batchnorm:
-          last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-          grads['W{}'.format(i)] = dw
-          grads['beta{}'.format(i)] = dbetta1
-          grads['gamma{}'.format(i)] = dgamma1
-          # print(dw.shape)
-        else:  
-          last_dout, dw  = Conv_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-          grads['W{}'.format(i)] = dw
-          # print(dw.shape)
-      else:
-        if self.batchnorm:
-          last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU.backward(last_dout, cache['{}'.format(i)])
-          grads['W{}'.format(i)] = dw
-          # print(dw.shape)
-          grads['beta{}'.format(i)] = dbetta1
-          grads['gamma{}'.format(i)] = dgamma1
-        else:
-          last_dout, dw  = Conv_ReLU.backward(last_dout, cache['{}'.format(i)])
-          grads['W{}'.format(i)] = dw
-        
-
-
-    return scores, loss, grads
-  
-def kaiming_initializer(Din, Dout, K=None, relu=True, device='cpu',
-                        dtype=torch.float32):
-  """
-  Implement Kaiming initialization for linear and convolution layers.
-  
-  Inputs:
-  - Din, Dout: Integers giving the number of input and output dimensions for
-    this layer
-  - K: If K is None, then initialize weights for a linear layer with Din input
-    dimensions and Dout output dimensions. Otherwise if K is a nonnegative
-    integer then initialize the weights for a convolution layer with Din input
-    channels, Dout output channels, and a kernel size of KxK.
-  - relu: If ReLU=True, then initialize weights with a gain of 2 to account for
-    a ReLU nonlinearity (Kaiming initializaiton); otherwise initialize weights
-    with a gain of 1 (Xavier initialization).
-  - device, dtype: The device and datatype for the output tensor.
-
-  Returns:
-  - weight: A torch Tensor giving initialized weights for this layer. For a
-    linear layer it should have shape (Din, Dout); for a convolution layer it
-    should have shape (Dout, Din, K, K).
-  """
-  gain = 2. if relu else 1.
-  weight = None
-  if K is None:
-
-    weight_scale = gain/(Din)
-    weight = torch.zeros(Din,Dout, dtype=dtype,device = device)
-    weight += weight_scale*torch.randn(Din,Dout, dtype=dtype,device= device)
-    ###########################################################################
-    #                            END OF YOUR CODE                             #
-    ###########################################################################
-  else:
-
-    weight_scale = gain/(Din*K*K)
-    weight = torch.zeros(Din,Dout, K,K, dtype=dtype,device = device)
-    weight += weight_scale*torch.randn(Din,Dout, K,K, dtype=dtype,device= device)
-    ###########################################################################
-    #                            END OF YOUR CODE                             #
-    ###########################################################################
-  return weight
 
 class BatchNorm(object):
 
@@ -1169,7 +1140,6 @@ class BatchNorm(object):
     ###########################################################################
 
     return dx, dgamma, dbeta
-
 
 class SpatialBatchNorm(object):
 

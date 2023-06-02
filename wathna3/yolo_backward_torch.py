@@ -630,37 +630,50 @@ class DeepConvNetTorch(object): # Python based CNN Implementation
     if True: 
       # grads['W{}'.format(i)] = model_ll.conv9.weight.grad
       # grads['b{}'.format(i)] = model_ll.conv9.bias.grad
-      last_dout, dw, db  = FastConvWB.backward(dout, cache['8'])
-      grads['W8'] = dw
-      grads['b8'] = db
-      # print(dw, db)
-      # print(last_dout.shape)
-      # for i in range(i-1, -1, -1):
-      #   print(len(cache['{}'.format(i)]))
-      for i in range(i-1,-1,-1):
-        if i in self.max_pools:
-          if self.batchnorm:
-            last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-            grads['W{}'.format(i)] = dw
-            grads['beta{}'.format(i)] = dbetta1
-            grads['gamma{}'.format(i)] = dgamma1
-            # print(dw.shape)
-          else:  
-            last_dout, dw  = Conv_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-            grads['W{}'.format(i)] = dw
-            # print(dw.shape)
-        else:
-          if self.batchnorm:
-            last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU.backward(last_dout, cache['{}'.format(i)])
-            grads['W{}'.format(i)] = dw
-            # print(dw.shape)
-            grads['beta{}'.format(i)] = dbetta1
-            grads['gamma{}'.format(i)] = dgamma1
-          else:
-            last_dout, dw  = Conv_ReLU.backward(last_dout, cache['{}'.format(i)])
-            grads['W{}'.format(i)] = dw
-      # return scores, loss, grads
-  
+      if True:
+        pass
+        # ii=8
+        # for i in range(ii-1, -1, -1):
+        #   print(len(cache['{}'.format(i)]))
+        # for i in range(ii-1,-1,-1):
+        #   if i in self.max_pools:
+        #     if self.batchnorm:
+        #       print(f'{i}--',1)
+        #       # last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
+        #       # grads['W{}'.format(i)] = dw
+        #       # grads['beta{}'.format(i)] = dbetta1
+        #       # grads['gamma{}'.format(i)] = dgamma1
+        #       # # print(dw.shape)
+        #     else:  
+        #       print(f'{i}--',2)
+        #       # last_dout, dw  = Conv_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
+        #       # grads['W{}'.format(i)] = dw
+        #       # # print(dw.shape)
+        #   else:
+        #     if self.batchnorm:
+        #       print(f'{i}--',3)
+        #       # last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU.backward(last_dout, cache['{}'.format(i)])
+        #       # grads['W{}'.format(i)] = dw
+        #       # # print(dw.shape)
+        #       # grads['beta{}'.format(i)] = dbetta1
+        #       # grads['gamma{}'.format(i)] = dgamma1
+        #     else:
+        #       print(f'{i}--',4)
+        #       # last_dout, dw  = Conv_ReLU.backward(last_dout, cache['{}'.format(i)])
+        #       # grads['W{}'.format(i)] = dw
+             
+      dout8, grads['W8'], grads['b8']                     = FastConvWB.backward              (dout,  cache['8']) 
+      dout7, grads['W7'], grads['gamma7'], grads['beta7'] = Conv_BatchNorm_ReLU.backward     (dout8, cache['7'])
+      dout6, grads['W6'], grads['gamma6'], grads['beta6'] = Conv_BatchNorm_ReLU.backward     (dout7, cache['6'])
+      dout5, grads['W5'], grads['gamma5'], grads['beta5'] = Conv_BatchNorm_ReLU.backward     (dout6, cache['5'])
+      dout4, grads['W4'], grads['gamma4'], grads['beta4'] = Conv_BatchNorm_ReLU_Pool.backward(dout5, cache['4'])
+      dout3, grads['W3'], grads['gamma3'], grads['beta3'] = Conv_BatchNorm_ReLU_Pool.backward(dout4, cache['3'])
+      dout2, grads['W2'], grads['gamma2'], grads['beta2'] = Conv_BatchNorm_ReLU_Pool.backward(dout3, cache['2'])
+      dout1, grads['W1'], grads['gamma1'], grads['beta1'] = Conv_BatchNorm_ReLU_Pool.backward(dout2, cache['1'])
+      dout0, grads['W0'], grads['gamma0'], grads['beta0'] = Conv_BatchNorm_ReLU_Pool.backward(dout1, cache['0'])
+
+
+
 class Conv(object):
 
   @staticmethod

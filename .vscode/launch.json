@@ -56,6 +56,28 @@
 			"console": "integratedTerminal",
 			"justMyCode": true,
 			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/"
+		},
+
+		
+		{
+			"name": "Wathna3 - Yolov2 Tiny - Python",
+			"type": "python",
+			"request": "launch",
+			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/yolov2tiny_python.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/"
+		},
+
+		
+		{
+			"name": "Wathna3 - Yolov2 Tiny _ Pytorch",
+			"type": "python",
+			"request": "launch",
+			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/yolov2tiny_pytorch.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/"
 		}
 	]
 }

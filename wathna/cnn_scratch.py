@@ -176,6 +176,7 @@ class Conv(object):
     F,C,HH,WW = w.shape
     H_out = int(1 + (H + 2 * pad - HH) / stride)
     W_out = int(1 + (W + 2 * pad - WW) / stride)
+    
     x = torch.nn.functional.pad(x, (pad,pad,pad,pad))
     
     out = torch.zeros((N,F,H_out,W_out),dtype =  x.dtype, device = x.device)
@@ -206,7 +207,7 @@ class Conv(object):
     """
     dx, dw  = None, None
 
-    x, w, b, conv_param = cache
+    x, w, conv_param = cache
     pad = conv_param['pad']
     stride = conv_param['stride']
     N,F,H_dout,W_dout = dout.shape
@@ -220,10 +221,109 @@ class Conv(object):
             dw[f]+= x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] * dout[n,f,height,width]
             dx[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW]+=w[f] * dout[n,f,height,width]
          
-    dx = dx[:,:,1:-1,1:-1] #delete padded "pixels"
-    print(dx.shape)   
+    dx = dx[:,:,1:-1,1:-1] # delete padded "pixels"
 
     return dx, dw
+  
+class ConvB(object):
+
+  @staticmethod
+  def forward(x, w, b, conv_param):
+    """
+    A naive implementation of the forward pass for a convolutional layer.
+    The input consists of N data points, each with C channels, height H and
+    width W. We convolve each input with F different filters, where each filter
+    spans all C channels and has height HH and width WW.
+
+    Input:
+    - x: Input data of shape (N, C, H, W)
+    - w: Filter weights of shape (F, C, HH, WW)
+    - b: Biases, of shape (F,)
+    - conv_param: A dictionary with the following keys:
+      - 'stride': The number of pixels between adjacent receptive fields in the
+      horizontal and vertical directions.
+      - 'pad': The number of pixels that will be used to zero-pad the input. 
+      
+    During padding, 'pad' zeros should be placed symmetrically (i.e equally on both sides)
+    along the height and width axes of the input. Be careful not to modfiy the original
+    input x directly.
+
+    Returns a tuple of:
+    - out: Output data, of shape (N, F, H', W') where H' and W' are given by
+      H' = 1 + (H + 2 * pad - HH) / stride
+      W' = 1 + (W + 2 * pad - WW) / stride
+    - cache: (x, w, b, conv_param)
+    """
+    out = None
+    ##############################################################################
+    # TODO: Implement the convolutional forward pass.                            #
+    # Hint: you can use the function torch.nn.functional.pad for padding.        #
+    # Note that you are NOT allowed to use anything in torch.nn in other places. #
+    ##############################################################################
+    # Replace "pass" statement with your code
+    pad = conv_param['pad']
+    stride = conv_param['stride']
+    N,C,H,W = x.shape
+    F,C,HH,WW = w.shape
+    H_out = int(1 + (H + 2 * pad - HH) / stride)
+    W_out = int(1 + (W + 2 * pad - WW) / stride)
+    x = torch.nn.functional.pad(x, (pad,pad,pad,pad))
+    
+    out = torch.zeros((N,F,H_out,W_out),dtype =  x.dtype, device = x.device)
+
+    for n in range(N):
+      for f in range(F):
+        for height in range(H_out):
+          for width in range(W_out):
+            out[n,f,height,width] = (x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] *w[f]).sum() + b[f]
+    #############################################################################
+    #                              END OF YOUR CODE                             #
+    #############################################################################
+    cache = (x, w, b, conv_param)
+    return out, cache
+
+  @staticmethod
+  def backward(dout, cache):
+    """
+    A naive implementation of the backward pass for a convolutional layer.
+
+    Inputs:
+    - dout: Upstream derivatives.
+    - cache: A tuple of (x, w, b, conv_param) as in conv_forward_naive
+
+    Returns a tuple of:
+    - dx: Gradient with respect to x
+    - dw: Gradient with respect to w
+    - db: Gradient with respect to b
+    """
+    dx, dw, db = None, None, None
+    #############################################################################
+    # TODO: Implement the convolutional backward pass.                          #
+    #############################################################################
+    # Replace "pass" statement with your code
+    x, w, b, conv_param = cache
+    pad = conv_param['pad']
+    stride = conv_param['stride']
+    N,F,H_dout,W_dout = dout.shape
+    F,C,HH,WW = w.shape
+    db = torch.zeros_like(b)
+    dw = torch.zeros_like(w)
+    dx = torch.zeros_like(x)
+    for n in range(N):
+      for f in range(F):
+        for height in range(H_dout):
+          for width in range(W_dout):
+            db[f]+=dout[n,f,height,width]
+            dw[f]+= x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] * dout[n,f,height,width]
+            dx[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW]+=w[f] * dout[n,f,height,width]
+         
+    dx = dx[:,:,1:-1,1:-1] #delete padded "pixels"
+    print(dx.shape)   
+    #############################################################################
+    #                              END OF YOUR CODE                             #
+    #############################################################################
+    return dx, dw, db
+
 
 class ReLU(object):
 
@@ -934,14 +1034,12 @@ class DeepConvNet(object):
     class_score = out[:, :, 5:]
     class_pred = F.softmax(class_score, dim=-1)
     delta_pred = torch.cat([xy_pred, hw_pred], dim=-1)
-    ############################################################################
-    #                             END OF YOUR CODE                             #
-    ############################################################################
 
     if y is None:
       return delta_pred, conf_pred, class_pred
 
     loss, grads = 0, {}
+    
     ############################################################################
     # TODO: Implement the backward pass for the DeepConvNet, storing the loss  #
     # and gradients in the loss and grads variables. Compute data loss using   #

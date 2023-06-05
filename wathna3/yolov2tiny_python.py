@@ -13,7 +13,6 @@ from dataset.factory import get_imdb
 from dataset.roidb import RoiDataset, detection_collate
 from loss import build_target, yolo_loss
 from yolo_backward_python import *
-from yolo_backward_pytorch import *
 
 class WeightLoader(object):
 	def __init__(self):

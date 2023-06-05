@@ -463,6 +463,7 @@ class DeepConvNet(object): # Python based CNN Implementation
       self.p[f'conv{i}'] = {'stride': 1, 'pad': (filter_size - 1) // 2}
     self.p[f'conv{8}'] = {'stride': 1, 'pad': (filter_size - 1) // 2}
     self.p[f'conv{8}']['pad']   = 0
+    
 
   def save(self, path):
     checkpoint = {
@@ -497,71 +498,24 @@ class DeepConvNet(object): # Python based CNN Implementation
 
     print("load checkpoint file: {}".format(path))
 
-  def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
-    """
-    Evaluate loss and gradient for the deep convolutional network.
-    Input / output: Same API as ThreeLayerConvNet.
-    """
-    
+  def forward(self, X=[], save_output=False, save_pickle=False, Forward_Prop=True, is_training=True):
     print(f"\nThis code is using Python based code.")
-    y = 1
-    X = X.to(self.dtype)
-    
-    mode = 'test' if y is None else 'train'
-    # Set train/test mode for batchnorm params since they behave differently during training and testing.
-    if self.batchnorm:
-      for bn_param in self.bn_params:
-        bn_param['mode'] = mode
+    X     = X.to(self.dtype)
+    cache = {}
+
     # pass pool_param to the forward pass for the max-pooling layer
     pool_param      = {'pool_height': 2, 'pool_width': 2,   'stride': 2}
     slowpool_param  = {'pool_height':2,  'pool_width':2,    'stride': 1}
     
-    scores = None
-    cache = {}
-    out = X
+    # Set train/test mode for batchnorm params since they behave differently during training and testing.
+    mode = 'train' if is_training else 'test'
+    if self.batchnorm:
+      for bn_param in self.bn_params:
+        bn_param['mode'] = mode
     
-    # # Commenting out the loop to replace with simplified statements
-    if True:
-      pass
-      # for i in range(self.num_layers-1):
-      #   # print(i)
-      #   # print(out.shape)
-      #   if i in self.max_pools:
-      #     # print('max_pool')
-      #     if self.batchnorm:
-      #       print('Conv_BatchNorm_ReLU_Pool')
-      #       out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward( out, 
-      #                                                                     self.p['W{}'.format(i)], 
-      #                                                                     self.p['gamma{}'.format(i)], 
-      #                                                                     self.p['beta{}'.format(i)], 
-      #                                                                     conv_param, 
-      #                                                                     self.bn_params[i],pool_param) 
-      #     else:  
-      #       print("Conv_ReLU_Pool")
-      #       out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward( out,
-      #                                                           self.p['W{}'.format(i)], 
-      #                                                           conv_param,pool_param) 
-      #   else:
-      #     if self.slowpool and i == 6 :
-      #       print('FastMaxPool')
-      #       # print(self.num_filters[i])
-      #       out = F.pad(out, (0, 1, 0, 1))
-      #       out, cache['{}'.format(i)] = FastMaxPool.forward(out, slowpool_param)
-      #     if self.batchnorm:
-      #       print('Conv_BatchNorm_ReLU')
-      #       out, cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward( out, 
-      #                                                                 self.p['W{}'.format(i)],
-      #                                                                 self.p['gamma{}'.format(i)],
-      #                                                                 self.p['beta{}'.format(i)],
-      #                                                                 conv_param,
-      #                                                                 self.bn_params[i]) 
-      #     else:
-      #       print('Conv_ReLU')
-      #       out,cache['{}'.format(i)] = Conv_ReLU.forward(out, self.p['W{}'.format(i)], conv_param) 
-  
+    
     # Forward Propagation simplified code ---- ON CHIP
-    Forward = False
-    if Forward:
+    if Forward_Prop:
       print(f"\tForward Propagation")
       Out={}
       Out[0] , cache['0']  = Conv_BatchNorm_ReLU_Pool.forward(X      , self.p['W0'], self.p['gamma0'],self.p['beta0'],self.p[f'conv0'],self.bn_params[0],pool_param)
@@ -577,12 +531,16 @@ class DeepConvNet(object): # Python based CNN Implementation
       Out[8] , cache['8']  = ConvB.forward              (Out[7] , self.p['W8'], self.p['b8']                    ,self.p[f'conv8'])
       out = Out[8] 
           
-      Path("Temp_Files/Python").mkdir(parents=True, exist_ok=True)
-      with open('Temp_Files/Python/Forward_Out.pickle','wb') as handle:
-        pickle.dump(Out,handle, protocol=pickle.HIGHEST_PROTOCOL)
-      with open('Temp_Files/Python/Forward_cache.pickle','wb') as handle:
-        pickle.dump(cache,handle, protocol=pickle.HIGHEST_PROTOCOL)
+      # Save pickle for future loading 
+      if save_pickle:
+        Path("Temp_Files/Python").mkdir(parents=True, exist_ok=True)
+        with open('Temp_Files/Python/Forward_Out.pickle','wb') as handle:
+          pickle.dump(Out,handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open('Temp_Files/Python/Forward_cache.pickle','wb') as handle:
+          pickle.dump(cache,handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
+      # Load pickle from old files
+      Path("Temp_Files/Python").mkdir(parents=True, exist_ok=True)
       print(f"\tForward Propagation - Load saved file.")
       with open('Temp_Files/Python/Forward_Out.pickle','rb') as handle:
         Out   = pickle.load(handle) 
@@ -592,18 +550,30 @@ class DeepConvNet(object): # Python based CNN Implementation
       with open('Temp_Files/Python/Forward_cache.pickle','rb') as handle:
         cache = pickle.load(handle)   
 
-    Path("Outputs/Python/Forward/").mkdir(parents=True, exist_ok=True)
-    compare = open(f'Outputs/Python/Forward/Comparison', mode='w')
-    for _key in Out.keys():
-      with open(f'Outputs/Python/Forward/Layer_{_key}', mode='w') as f:
-        f.write(str(Out[_key]))
-        compare.write(f'\n\nLayer {_key} - Forward')
-        compare.write(str(Out[_key][0,2,8:13,8:13]))
+    # Save output for circuit team.
+    if save_output:
+      Path("Outputs/Python/Forward/").mkdir(parents=True, exist_ok=True)
+      compare = open(f'Outputs/Python/Forward/Comparison', mode='w')
+      for _key in Out.keys():
+        with open(f'Outputs/Python/Forward/Layer_{_key}', mode='w') as f:
+          f.write(str(Out[_key]))
+          compare.write(f'\n\nLayer {_key} - Forward')
+          compare.write(str(Out[_key][0,2,8:13,8:13]))
+    
     # Return the output of forward propagation
+    return Out, cache
+    
+  def loss(self, gt_boxes=None, gt_classes=None, num_boxes=None, Compute_Loss=True, save_output=False, save_pickle=False):
+    """
+    Evaluate loss and gradient for the deep convolutional network.
+    Input / output: Same API as ThreeLayerConvNet.
+    """
     
     #  Compute_Loss_On_system
-    if True:
-      print(f"\tLoss Calculation")
+    if Compute_Loss:
+      print(f"\tLoss Calculation done on system.")
+      out.requires_grad = True
+      out.retain_grad()
       # Reshape the output 
       scores          = out
       bsize, _, h, w  = out.shape
@@ -638,90 +608,102 @@ class DeepConvNet(object): # Python based CNN Implementation
       # Calculate loss gradients
       grads = {}
       out = scores
+      out.requires_grad = True
       loss.backward(retain_graph=True)
       dout = out.grad
-      loss_gradients = dout
+        
+      # Save output for circuit team and pickle for future.
+      if save_pickle or save_output: Path("Outputs/Python/Backward/").mkdir(parents=True, exist_ok=True)
+      if save_pickle:
+        with open('Temp_Files/Python/Backward_loss_gradients.pickle','wb') as handle:
+          pickle.dump(dout,handle, protocol=pickle.HIGHEST_PROTOCOL)
+      if save_output:
+        with open(f'Outputs/Python/Backward/Backward_loss_gradients', mode='w') as f:
+          f.write(str(dout))
+      
     # System will return dout / loss derivatives
+    return dout, class_pred
+    
+  def backward(self, loss_gradients=[], cache=[], Backward_prop=True, save_output=False, save_pickle=False):
+    dout = loss_gradients
     
     # Backward Propagation ---- ON CHIP
-    Backward = True
-    if Backward: 
-      # grads['W{}'.format(i)] = model_ll.conv9.weight.grad
-      # grads['b{}'.format(i)] = model_ll.conv9.bias.grad
-      if True:
-        pass
-        # ii=8
-        # for i in range(ii-1, -1, -1):
-        #   print(len(cache['{}'.format(i)]))
-        # for i in range(ii-1,-1,-1):
-        #   if i in self.max_pools:
-        #     if self.batchnorm:
-        #       print(f'{i}--',1)
-        #       # last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-        #       # grads['W{}'.format(i)] = dw
-        #       # grads['beta{}'.format(i)] = dbetta1
-        #       # grads['gamma{}'.format(i)] = dgamma1
-        #       # # print(dw.shape)
-        #     else:  
-        #       print(f'{i}--',2)
-        #       # last_dout, dw  = Conv_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-        #       # grads['W{}'.format(i)] = dw
-        #       # # print(dw.shape)
-        #   else:
-        #     if self.batchnorm:
-        #       print(f'{i}--',3)
-        #       # last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU.backward(last_dout, cache['{}'.format(i)])
-        #       # grads['W{}'.format(i)] = dw
-        #       # # print(dw.shape)
-        #       # grads['beta{}'.format(i)] = dbetta1
-        #       # grads['gamma{}'.format(i)] = dgamma1
-        #     else:
-        #       print(f'{i}--',4)
-        #       # last_dout, dw  = Conv_ReLU.backward(last_dout, cache['{}'.format(i)])
-        #       # grads['W{}'.format(i)] = dw
-       
-      if True:
-        print(f"\tBackward Propagation")      
-        dOut={}       
-        dOut[8], grads['W8'], grads['b8']                     = ConvB.backward                   (dout,  cache['8']) 
-        dOut[7], grads['W7'], grads['gamma7'], grads['beta7'] = Conv_BatchNorm_ReLU.backward     (dOut[8], cache['7'])
-        dOut[6], grads['W6'], grads['gamma6'], grads['beta6'] = Conv_BatchNorm_ReLU.backward     (dOut[7], cache['6'])
-        dOut[5], grads['W5'], grads['gamma5'], grads['beta5'] = Conv_BatchNorm_ReLU.backward     (dOut[6], cache['5'])
-        dOut[4], grads['W4'], grads['gamma4'], grads['beta4'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[5], cache['4'])
-        dOut[3], grads['W3'], grads['gamma3'], grads['beta3'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[4], cache['3'])
-        dOut[2], grads['W2'], grads['gamma2'], grads['beta2'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[3], cache['2'])
-        dOut[1], grads['W1'], grads['gamma1'], grads['beta1'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[2], cache['1'])
-        dOut[0], grads['W0'], grads['gamma0'], grads['beta0'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[1], cache['0'])
+    if Backward_prop: 
+      print(f"\tBackward Propagation")      
+      dOut={}       
+      dOut[8], grads['W8'], grads['b8']                     = ConvB.backward                   (dout,  cache['8']) 
+      dOut[7], grads['W7'], grads['gamma7'], grads['beta7'] = Conv_BatchNorm_ReLU.backward     (dOut[8], cache['7'])
+      dOut[6], grads['W6'], grads['gamma6'], grads['beta6'] = Conv_BatchNorm_ReLU.backward     (dOut[7], cache['6'])
+      dOut[5], grads['W5'], grads['gamma5'], grads['beta5'] = Conv_BatchNorm_ReLU.backward     (dOut[6], cache['5'])
+      dOut[4], grads['W4'], grads['gamma4'], grads['beta4'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[5], cache['4'])
+      dOut[3], grads['W3'], grads['gamma3'], grads['beta3'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[4], cache['3'])
+      dOut[2], grads['W2'], grads['gamma2'], grads['beta2'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[3], cache['2'])
+      dOut[1], grads['W1'], grads['gamma1'], grads['beta1'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[2], cache['1'])
+      dOut[0], grads['W0'], grads['gamma0'], grads['beta0'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[1], cache['0'])
 
-        
+      # Save pickle files for future use
+      if save_pickle:
+        Path("Temp_Files/Python/").mkdir(parents=True, exist_ok=True)
         with open('Temp_Files/Python/Backward_dOut.pickle','wb') as handle:
           pickle.dump(dOut,handle, protocol=pickle.HIGHEST_PROTOCOL)
         with open('Temp_Files/Python/Backward_grads.pickle','wb') as handle:
           pickle.dump(grads,handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
-        print(f"\tBackward Propagation - Load from file")      
-        with open('Temp_Files/Python/Backward_dOut.pickle','rb') as handle:
-          dOut   = pickle.load(handle) 
-        with open('Temp_Files/Python/Backward_grads.pickle','rb') as handle:
-          grads  = pickle.load(handle)  
-          
-        
-    Path("Outputs/Python/Backward/").mkdir(parents=True, exist_ok=True)
+      # Load data from old pickle file
+      print(f"\tBackward Propagation - Load from file")      
+      with open('Temp_Files/Python/Backward_dOut.pickle','rb') as handle:
+        dOut   = pickle.load(handle) 
+      with open('Temp_Files/Python/Backward_grads.pickle','rb') as handle:
+        grads  = pickle.load(handle)  
     
-    with open(f'Outputs/Python/Backward/Backward_loss_gradients', mode='w') as f:
-      f.write(str(dout))
-    for _key in dOut.keys():
-      with open(f'Outputs/Python/Backward/Layer_{_key}', mode='w') as f:
-        f.write(str(dOut[_key]))
-        try:
-          compare.write(f'\n\nLayer {_key} - Backward')
-          compare.write(str(dOut[_key][0,2,8:13,8:13]))
-        except:
-          compare = open(f'Outputs/Python/Forward/Comparison', mode='w')
-          compare.write(f'\n\nLayer {_key} - Backward')
-          compare.write(str(dOut[_key][0,2,8:13,8:13]))
+    if save_output:
+      for _key in dOut.keys():
+        with open(f'Outputs/Python/Backward/Layer_{_key}', mode='w') as f:
+          f.write(str(dOut[_key]))
+          try:
+            compare.write(f'\n\nLayer {_key} - Backward')
+            compare.write(str(dOut[_key][0,2,8:13,8:13]))
+          except:
+            compare = open(f'Outputs/Python/Forward/Comparison', mode='w')
+            compare.write(f'\n\nLayer {_key} - Backward')
+            compare.write(str(dOut[_key][0,2,8:13,8:13]))
                   
-    print('Finished')
+    return  dOut, grads
+
+  def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
+    """
+    Perform one iteration of the training
+    """
+    Forward_Prop = False
+    Compute_Loss = False
+    Backward_prop = True
+    
+    is_training=True
+    
+    save_output = False
+    save_pickle = False
+    
+    Forward_Out, cache   = self.forward (X=X, 
+                                         Forward_Prop=Forward_Prop, 
+                                         is_training=is_training, 
+                                         save_output=save_output, 
+                                         save_pickle=save_pickle)
+    
+    loss_gradients, classes = self.loss (gt_boxes=gt_boxes, 
+                                         gt_classes=gt_classes, 
+                                         num_boxes=num_boxes, 
+                                         Compute_Loss=Compute_Loss, 
+                                         save_output=save_output, 
+                                         save_pickle=save_pickle)
+    
+    dOut, grads          = self.backward(loss_gradients=loss_gradients, 
+                                         cache=cache, 
+                                         Backward_prop=Backward_prop, 
+                                         save_output=save_output, 
+                                         save_pickle=save_pickle)
+    
+    print('Iteration complete.')
+    print(' ')
 
 ################################################################################
 ################################################################################
@@ -729,93 +711,12 @@ class DeepConvNet(object): # Python based CNN Implementation
 ################################################################################
 ################################################################################
 
-class Conv(object):
 
-  @staticmethod
-  def forward(x, w, conv_param):
-    """
-    A naive implementation of the forward pass for a convolutional layer.
-    The input consists of N data points, each with C channels, height H and
-    width W. We convolve each input with F different filters, where each filter
-    spans all C channels and has height HH and width WW.
-
-    Input:
-    - x: Input data of shape (N, C, H, W)
-    - w: Filter weights of shape (F, C, HH, WW)
-    - conv_param: A dictionary with the following keys:
-      - 'stride': The number of pixels between adjacent receptive fields in the
-      horizontal and vertical directions.
-      - 'pad': The number of pixels that will be used to zero-pad the input. 
-      
-    During padding, 'pad' zeros should be placed symmetrically (i.e equally on both sides)
-    along the height and width axes of the input. Be careful not to modfiy the original
-    input x directly.
-
-    Returns a tuple of:
-    - out: Output data, of shape (N, F, H', W') where H' and W' are given by
-      H' = 1 + (H + 2 * pad - HH) / stride
-      W' = 1 + (W + 2 * pad - WW) / stride
-    - cache: (x, w, conv_param)
-    """
-    out = None
-
-    pad = conv_param['pad']
-    stride = conv_param['stride']
-    N,C,H,W = x.shape
-    F,C,HH,WW = w.shape
-    H_out = int(1 + (H + 2 * pad - HH) / stride)
-    W_out = int(1 + (W + 2 * pad - WW) / stride)
-    x = torch.nn.functional.pad(x, (pad,pad,pad,pad))
-    
-    out = torch.zeros((N,F,H_out,W_out),dtype =  x.dtype, device = x.device)
-
-    for n in range(N):
-      for f in range(F):
-        for height in range(H_out):
-          for width in range(W_out):
-            out[n,f,height,width] = (x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] *w[f]).sum()
-
-    cache = (x, w, conv_param)
-    return out, cache
-
-  @staticmethod
-  def backward(dout, cache):
-    """
-    A naive implementation of the backward pass for a convolutional layer.
-
-    Inputs:
-    - dout: Upstream derivatives.
-    - cache: A tuple of (x, w, b, conv_param) as in conv_forward_naive
-
-    Returns a tuple of:
-    - dx: Gradient with respect to x
-    - dw: Gradient with respect to w
-    - db: Gradient with respect to b
-    """
-    dx, dw  = None, None
-
-    x, w, conv_param = cache
-    pad = conv_param['pad']
-    stride = conv_param['stride']
-    N,F,H_dout,W_dout = dout.shape
-    F,C,HH,WW = w.shape
-    dw = torch.zeros_like(w)
-    dx = torch.zeros_like(x)
-    for n in range(N):
-      for f in range(F):
-        for height in range(H_dout):
-          for width in range(W_dout):
-            dw[f]+= x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] * dout[n,f,height,width]
-            dx[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW]+=w[f] * dout[n,f,height,width]
-         
-    dx = dx[:,:,1:-1,1:-1] # delete padded "pixels"
-
-    return dx, dw
-  
+# Convolution with Bias
 class ConvB(object):
 
   @staticmethod
-  def forward(x, w, b, conv_param):
+  def forward(x, w, b, conv_param, _debug=False):
     """
     A naive implementation of the forward pass for a convolutional layer.
     The input consists of N data points, each with C channels, height H and
@@ -893,11 +794,98 @@ class ConvB(object):
             db[f]+=dout[n,f,height,width]
             dw[f]+= x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] * dout[n,f,height,width]
             dx[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW]+=w[f] * dout[n,f,height,width]
-    if pad != 0:   
-      dx = dx[:,:,1:-1,1:-1] # delete padded "pixels"
+         
+    if pad != 0:
+      dx = dx[:,:,1:-1,1:-1] #delete padded "pixels"
+    print(dx.shape)   
 
     return dx, dw, db
-  
+
+# Convolution without Bias
+class Conv(object):
+
+  @staticmethod
+  def forward(x, w, conv_param, _debug=False):
+    """
+    A naive implementation of the forward pass for a convolutional layer.
+    The input consists of N data points, each with C channels, height H and
+    width W. We convolve each input with F different filters, where each filter
+    spans all C channels and has height HH and width WW.
+
+    Input:
+    - x: Input data of shape (N, C, H, W)
+    - w: Filter weights of shape (F, C, HH, WW)
+    - conv_param: A dictionary with the following keys:
+      - 'stride': The number of pixels between adjacent receptive fields in the
+      horizontal and vertical directions.
+      - 'pad': The number of pixels that will be used to zero-pad the input. 
+      
+    During padding, 'pad' zeros should be placed symmetrically (i.e equally on both sides)
+    along the height and width axes of the input. Be careful not to modfiy the original
+    input x directly.
+
+    Returns a tuple of:
+    - out: Output data, of shape (N, F, H', W') where H' and W' are given by
+      H' = 1 + (H + 2 * pad - HH) / stride
+      W' = 1 + (W + 2 * pad - WW) / stride
+    - cache: (x, w, conv_param)
+    """
+    out = None
+
+    pad = conv_param['pad']
+    stride = conv_param['stride']
+    N,C,H,W = x.shape
+    F,C,HH,WW = w.shape
+    H_out = int(1 + (H + 2 * pad - HH) / stride)
+    W_out = int(1 + (W + 2 * pad - WW) / stride)
+    x = torch.nn.functional.pad(x, (pad,pad,pad,pad))
+    
+    out = torch.zeros((N,F,H_out,W_out),dtype =  x.dtype, device = x.device)
+
+    for n in range(N):
+      for f in range(F):
+        for height in range(H_out):
+          for width in range(W_out):
+            out[n,f,height,width] = (x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] *w[f]).sum()
+
+    cache = (x, w, conv_param)
+    return out, cache
+
+  @staticmethod
+  def backward(dout, cache):
+    """
+    A naive implementation of the backward pass for a convolutional layer.
+
+    Inputs:
+    - dout: Upstream derivatives.
+    - cache: A tuple of (x, w, b, conv_param) as in conv_forward_naive
+
+    Returns a tuple of:
+    - dx: Gradient with respect to x
+    - dw: Gradient with respect to w
+    - db: Gradient with respect to b
+    """
+    dx, dw  = None, None
+
+    x, w, conv_param = cache
+    pad = conv_param['pad']
+    stride = conv_param['stride']
+    N,F,H_dout,W_dout = dout.shape
+    F,C,HH,WW = w.shape
+    dw = torch.zeros_like(w)
+    dx = torch.zeros_like(x)
+    for n in range(N):
+      for f in range(F):
+        for height in range(H_dout):
+          for width in range(W_dout):
+            dw[f]+= x[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW] * dout[n,f,height,width]
+            dx[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW]+=w[f] * dout[n,f,height,width]
+         
+    dx = dx[:,:,1:-1,1:-1] #delete padded "pixels"
+    print(dx.shape)   
+
+    return dx, dw
+ 
 class ReLU(object):
 
     @staticmethod

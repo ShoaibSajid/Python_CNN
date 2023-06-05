@@ -1,3 +1,4 @@
+import copy
 import shutil
 import os
 import warnings
@@ -430,30 +431,99 @@ if _Get_Next_Data:
 	gt_boxes    = gt_boxes[0].unsqueeze(0)
 	gt_classes  = gt_classes[0].unsqueeze(0)
 	num_obj     = num_obj[0].unsqueeze(0)
+ 
+	__data = im_data, gt_boxes, gt_classes, num_obj
 
-	with open('default_data.pickle','wb') as handle:
+	Path("Temp_Files").mkdir(parents=True, exist_ok=True)
+	with open('Temp_Files/default_data.pickle','wb') as handle:
 		pickle.dump(_data,handle, protocol=pickle.HIGHEST_PROTOCOL)
 else:
-	with open('default_data.pickle', 'rb') as handle:
+	with open('Temp_Files/default_data.pickle', 'rb') as handle:
 		b = pickle.load(handle)
 	im_data, gt_boxes, gt_classes, num_obj = b
 	im_data, gt_boxes, gt_classes, num_obj = im_data[0].unsqueeze(0), gt_boxes[0].unsqueeze(0), gt_classes[0].unsqueeze(0), num_obj[0].unsqueeze(0)
+	__data = im_data, gt_boxes, gt_classes, num_obj
 	print(f"\n\nLoading data from saved file\n\nImage (im_data[0,:3,66:69,66:69]\n{im_data[0,:3,66:69,66:69]}\n\n")
 	
 if __name__ == '__main__':
 	if os.path.isdir("Outputs"): shutil.rmtree("Outputs")
 	
-	im_data, gt_boxes, gt_classes, num_obj = b
-	im_data, gt_boxes, gt_classes, num_obj = im_data[0].unsqueeze(0), gt_boxes[0].unsqueeze(0), gt_classes[0].unsqueeze(0), num_obj[0].unsqueeze(0)
-	Out, dOut, cache, grads = python__model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
-	
-	im_data, gt_boxes, gt_classes, num_obj = b
-	im_data, gt_boxes, gt_classes, num_obj = im_data[0].unsqueeze(0), gt_boxes[0].unsqueeze(0), gt_classes[0].unsqueeze(0), num_obj[0].unsqueeze(0)
-	_Out, _dOut, _cache, _grads = pytorch_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
+	im_data, gt_boxes, gt_classes, num_obj 	 = copy.deepcopy(__data)
+	_Out, _dOut, _cache, _grads, _loss_grads = pytorch_model.train(	im_data, 
+																	gt_boxes=gt_boxes, 
+																	gt_classes=gt_classes, 
+																	num_boxes=num_obj, 
+																	Forward_Prop=True, 
+																	Compute_Loss=True, 
+																	Backward_prop=True, 
+																	save_output=False, 
+																	save_pickle=False)
+			
 
+				
+				
+     
+	im_data, gt_boxes, gt_classes, num_obj = copy.deepcopy(__data)
+	Out, dOut, cache, grads, loss_grads    = python__model.train(im_data, 
+																gt_boxes=gt_boxes, 
+																gt_classes=gt_classes, 
+																num_boxes=num_obj, 
+																Forward_Prop=False, 
+																Compute_Loss=False, 
+																Backward_prop=False, 
+																save_output=False, 
+																save_pickle=False)
+	
 
 	import eecs598
-	print(f"Error= {eecs598.grad.rel_error(dOut[0], _dOut[0])}")
+	print(f"Error= {eecs598.grad.rel_error(Out[0], _Out[0])}")
 	print(f"Error= {eecs598.grad.rel_error(dOut[1], _dOut[1])}")
 	print('Finished')
+
+
+# 	# Forward for both model
+# 	im_data, gt_boxes, gt_classes, num_obj = copy.deepcopy				(__data)
+# 	pytorch_Forward_Out, pytorch_cache 		= pytorch_model.forward  	(X=im_data, 
+# 																		Forward_Prop=True, 
+# 																		save_output=False, 
+# 																		save_pickle=False)
+# 	im_data, gt_boxes, gt_classes, num_obj = copy.deepcopy				(__data)
+# 	python_Forward_Out, python_cache 		= python__model.forward  	(X=im_data, 
+# 																		Forward_Prop=False, 
+# 																		save_output=False, 
+# 																		save_pickle=False)
+			
+	
+
+# #  Loss for both models
+# 	im_data, gt_boxes, gt_classes, num_obj = copy.deepcopy	(__data)
+# 	pytorch_loss_grads, _ = pytorch_model.loss 				(out=pytorch_Forward_Out[8],
+# 															gt_boxes=gt_boxes, 
+# 															gt_classes=gt_classes, 
+# 															num_boxes=num_obj, 
+# 															Compute_Loss=True, 
+# 															save_output=False, 
+# 															save_pickle=False)
+ 
+# 	im_data, gt_boxes, gt_classes, num_obj = copy.deepcopy	(__data)
+# 	python_loss_grads, _  = python__model.loss 				(out=python_Forward_Out[8],
+# 															gt_boxes=gt_boxes, 
+# 															gt_classes=gt_classes, 
+# 															num_boxes=num_obj, 
+# 															Compute_Loss=True, 
+# 															save_output=False, 
+# 															save_pickle=False)
+
+# # Backward for both models
+# 	pytorch_loss_grads, _ = pytorch_model.backward 	(loss_gradients=pytorch_loss_grads, 
+# 													cache=pytorch_cache, 
+# 													Backward_prop=True, 
+# 													save_output=False, 
+# 													save_pickle=False)
+# 	python_loss_grads, _  = python__model.backward	(loss_gradients=python_loss_grads, 
+# 													cache=python_cache, 
+# 													Backward_prop=True, 
+# 													save_output=False, 
+# 													save_pickle=False)
+
 

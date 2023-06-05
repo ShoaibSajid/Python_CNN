@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import pickle
 import torch
@@ -499,72 +500,25 @@ class DeepConvNetTorch(object): # Python based CNN Implementation
 
     print("load checkpoint file: {}".format(path))
 
-  def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
-    """
-    Evaluate loss and gradient for the deep convolutional network.
-    Input / output: Same API as ThreeLayerConvNet.
-    """
-    
-    print(f"\nThis code is using Pytorch based code.")
-    y = 1
-    X = X.to(self.dtype)
-    
-    mode = 'test' if y is None else 'train'
-    # Set train/test mode for batchnorm params since they behave differently during training and testing.
-    if self.batchnorm:
-      for bn_param in self.bn_params:
-        bn_param['mode'] = mode
+
+  def forward(self, X=[], save_output=False, save_pickle=False, Forward_Prop=True, is_training=True):
+    print(f"\nThis code is using PyTorch based code.")
+    X     = X.to(self.dtype)
+    cache = {}
+
     # pass pool_param to the forward pass for the max-pooling layer
     pool_param      = {'pool_height': 2, 'pool_width': 2,   'stride': 2}
     slowpool_param  = {'pool_height':2,  'pool_width':2,    'stride': 1}
     
-    scores = None
-    cache = {}
-    out = X
+    # Set train/test mode for batchnorm params since they behave differently during training and testing.
+    mode = 'train' if is_training else 'test'
+    if self.batchnorm:
+      for bn_param in self.bn_params:
+        bn_param['mode'] = mode
     
-    # # Commenting out the loop to replace with simplified statements
-    if True:
-      pass
-      # for i in range(self.num_layers-1):
-      #   # print(i)
-      #   # print(out.shape)
-      #   if i in self.max_pools:
-      #     # print('max_pool')
-      #     if self.batchnorm:
-      #       print('Conv_BatchNorm_ReLU_Pool')
-      #       out,cache['{}'.format(i)] = Conv_BatchNorm_ReLU_Pool.forward( out, 
-      #                                                                     self.p['W{}'.format(i)], 
-      #                                                                     self.p['gamma{}'.format(i)], 
-      #                                                                     self.p['beta{}'.format(i)], 
-      #                                                                     conv_param, 
-      #                                                                     self.bn_params[i],pool_param) 
-      #     else:  
-      #       print("Conv_ReLU_Pool")
-      #       out,cache['{}'.format(i)] = Conv_ReLU_Pool.forward( out,
-      #                                                           self.p['W{}'.format(i)], 
-      #                                                           conv_param,pool_param) 
-      #   else:
-      #     if self.slowpool and i == 6 :
-      #       print('FastMaxPool')
-      #       # print(self.num_filters[i])
-      #       out = F.pad(out, (0, 1, 0, 1))
-      #       out, cache['{}'.format(i)] = FastMaxPool.forward(out, slowpool_param)
-      #     if self.batchnorm:
-      #       print('Conv_BatchNorm_ReLU')
-      #       out, cache['{}'.format(i)] = Conv_BatchNorm_ReLU.forward( out, 
-      #                                                                 self.p['W{}'.format(i)],
-      #                                                                 self.p['gamma{}'.format(i)],
-      #                                                                 self.p['beta{}'.format(i)],
-      #                                                                 conv_param,
-      #                                                                 self.bn_params[i]) 
-      #     else:
-      #       print('Conv_ReLU')
-      #       out,cache['{}'.format(i)] = Conv_ReLU.forward(out, self.p['W{}'.format(i)], conv_param) 
-  
+    
     # Forward Propagation simplified code ---- ON CHIP
-    
-    Forward = True
-    if Forward:
+    if Forward_Prop:
       print(f"\tForward Propagation")
       Out={}
       Out[0] , cache['0']  = TorchConv_BatchNorm_ReLU_Pool.forward(X      , self.p['W0'], self.p['gamma0'],self.p['beta0'],self.p[f'conv0'],self.bn_params[0],pool_param)
@@ -574,19 +528,22 @@ class DeepConvNetTorch(object): # Python based CNN Implementation
       Out[4] , cache['4']  = TorchConv_BatchNorm_ReLU_Pool.forward(Out[3] , self.p['W4'], self.p['gamma4'],self.p['beta4'],self.p[f'conv4'],self.bn_params[4],pool_param)
       Out[5] , cache['5']  = TorchConv_BatchNorm_ReLU.forward     (Out[4] , self.p['W5'], self.p['gamma5'],self.p['beta5'],self.p[f'conv5'],self.bn_params[5]) 
       Out[60]              = F.pad                                (Out[5] , (0, 1, 0, 1))
-      Out[61], cache['61'] = TorchFastMaxPool.forward             (Out[60], slowpool_param)
+      Out[61], cache['61'] = TorchMaxPool.forward                 (Out[60], slowpool_param)
       Out[6] , cache['6']  = TorchConv_BatchNorm_ReLU.forward     (Out[61], self.p['W6'], self.p['gamma6'],self.p['beta6'],self.p[f'conv6'],self.bn_params[6]) 
       Out[7] , cache['7']  = TorchConv_BatchNorm_ReLU.forward     (Out[6] , self.p['W7'], self.p['gamma7'],self.p['beta7'],self.p[f'conv7'],self.bn_params[7]) 
       # conv_param['pad']   = 0
-      Out[8] , cache['8']  = TorchFastConvWB.forward              (Out[7] , self.p['W8'], self.p['b8']                    ,self.p[f'conv8'])
+      Out[8] , cache['8']  = TorchConvWB.forward                  (Out[7] , self.p['W8'], self.p['b8']                    ,self.p[f'conv8'])
       out = Out[8] 
- 
-      Path("Temp_Files/Pytorch").mkdir(parents=True, exist_ok=True)
-      with open('Temp_Files/Pytorch/Forward_Out.pickle','wb') as handle:
-        pickle.dump(Out,handle, protocol=pickle.HIGHEST_PROTOCOL)
-      with open('Temp_Files/Pytorch/Forward_cache.pickle','wb') as handle:
-        pickle.dump(cache,handle, protocol=pickle.HIGHEST_PROTOCOL)
+          
+      # Save pickle for future loading 
+      if save_pickle:
+        Path("Temp_Files/Pytorch").mkdir(parents=True, exist_ok=True)
+        with open('Temp_Files/Pytorch/Forward_Out.pickle','wb') as handle:
+          pickle.dump(Out,handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open('Temp_Files/Pytorch/Forward_cache.pickle','wb') as handle:
+          pickle.dump(cache,handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
+      # Load pickle from old files
       print(f"\tForward Propagation - Load saved file.")
       with open('Temp_Files/Pytorch/Forward_Out.pickle','rb') as handle:
         Out   = pickle.load(handle) 
@@ -596,19 +553,31 @@ class DeepConvNetTorch(object): # Python based CNN Implementation
       with open('Temp_Files/Pytorch/Forward_cache.pickle','rb') as handle:
         cache = pickle.load(handle)   
 
-    Path("Outputs/Pytorch/Forward/").mkdir(parents=True, exist_ok=True)
-    compare = open(f'Outputs/Pytorch/Forward/Comparison', mode='w')
-    for _key in Out.keys():
-      with open(f'Outputs/Pytorch/Forward/Layer_{_key}', mode='w') as f:
-        f.write(str(Out[_key]))
-        compare.write(f'\n\nLayer {_key} - Forward')
-        compare.write(str(Out[_key][0,2,8:13,8:13]))
-        
+    # Save output for circuit team.
+    if save_output:
+      Path("Outputs/Pytorch/Forward/").mkdir(parents=True, exist_ok=True)
+      compare = open(f'Outputs/Pytorch/Forward/Comparison', mode='w')
+      for _key in Out.keys():
+        with open(f'Outputs/Pytorch/Forward/Layer_{_key}', mode='w') as f:
+          f.write(str(Out[_key]))
+          compare.write(f'\n\nLayer {_key} - Forward')
+          compare.write(str(Out[_key][0,2,8:13,8:13]))
+    
     # Return the output of forward propagation
+    return Out, cache
+    
+        
+  def loss(self, out=[], gt_boxes=None, gt_classes=None, num_boxes=None, Compute_Loss=True, save_output=False, save_pickle=False):
+    """
+    Evaluate loss and gradient for the deep convolutional network.
+    Input / output: Same API as ThreeLayerConvNet.
+    """
     
     #  Compute_Loss_On_system
-    if True:
-      print(f"\tLoss Calculation")
+    if Compute_Loss or not os.path.isfile('Temp_Files/Pytorch/Backward_loss_gradients.pickle'):
+      print(f"\tLoss Calculation.")
+      # out.requires_grad = True
+      out.retain_grad()
       # Reshape the output 
       scores          = out
       bsize, _, h, w  = out.shape
@@ -641,181 +610,115 @@ class DeepConvNetTorch(object): # Python based CNN Implementation
       # loss, dout = yolo_loss(output_variable, target_variable)
       
       # Calculate loss gradients
-      grads = {}
       out = scores
-      out.retain_grad()
+      # out.requires_grad = True
       loss.backward(retain_graph=True)
       dout = out.grad
-      loss_gradients = dout
-    # System will return dout / loss derivatives
-    
-    # Backward Propagation ---- ON CHIP
-    Backward = True
-    if Backward:
-      # grads['W{}'.format(i)] = model_ll.conv9.weight.grad
-      # grads['b{}'.format(i)] = model_ll.conv9.bias.grad
-      if True:
-        pass
-        # ii=8
-        # for i in range(ii-1, -1, -1):
-        #   print(len(cache['{}'.format(i)]))
-        # for i in range(ii-1,-1,-1):
-        #   if i in self.max_pools:
-        #     if self.batchnorm:
-        #       print(f'{i}--',1)
-        #       # last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-        #       # grads['W{}'.format(i)] = dw
-        #       # grads['beta{}'.format(i)] = dbetta1
-        #       # grads['gamma{}'.format(i)] = dgamma1
-        #       # # print(dw.shape)
-        #     else:  
-        #       print(f'{i}--',2)
-        #       # last_dout, dw  = Conv_ReLU_Pool.backward(last_dout, cache['{}'.format(i)])
-        #       # grads['W{}'.format(i)] = dw
-        #       # # print(dw.shape)
-        #   else:
-        #     if self.batchnorm:
-        #       print(f'{i}--',3)
-        #       # last_dout, dw, dgamma1,dbetta1  = Conv_BatchNorm_ReLU.backward(last_dout, cache['{}'.format(i)])
-        #       # grads['W{}'.format(i)] = dw
-        #       # # print(dw.shape)
-        #       # grads['beta{}'.format(i)] = dbetta1
-        #       # grads['gamma{}'.format(i)] = dgamma1
-        #     else:
-        #       print(f'{i}--',4)
-        #       # last_dout, dw  = Conv_ReLU.backward(last_dout, cache['{}'.format(i)])
-        #       # grads['W{}'.format(i)] = dw
-      
-      
-      if True:
-        print(f"\tBackward Propagation")
-        dOut={}       
-        dOut[8], grads['W8'], grads['b8']                     = TorchFastConvWB.backward              (dout,  cache['8']) 
-        dOut[7], grads['W7'], grads['gamma7'], grads['beta7'] = TorchConv_BatchNorm_ReLU.backward     (dOut[8], cache['7'])
-        dOut[6], grads['W6'], grads['gamma6'], grads['beta6'] = TorchConv_BatchNorm_ReLU.backward     (dOut[7], cache['6'])
-        # dOut[61],grads['W6'], grads['gamma6'], grads['beta6'] = Conv_BatchNorm_ReLU.backward     (dOut[7], cache['6'])
-        # dOut[60]                                              = FastMaxPool.backward             (dOut[61], cache['61'])
-        # dOut[6]                                               = F.pad                            (dOut[60] , (0, 1, 0, 1))
-        dOut[5], grads['W5'], grads['gamma5'], grads['beta5'] = TorchConv_BatchNorm_ReLU.backward     (dOut[6], cache['5'])
-        dOut[4], grads['W4'], grads['gamma4'], grads['beta4'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[5], cache['4'])
-        dOut[3], grads['W3'], grads['gamma3'], grads['beta3'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[4], cache['3'])
-        dOut[2], grads['W2'], grads['gamma2'], grads['beta2'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[3], cache['2'])
-        dOut[1], grads['W1'], grads['gamma1'], grads['beta1'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[2], cache['1'])
-        dOut[0], grads['W0'], grads['gamma0'], grads['beta0'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[1], cache['0'])
-
         
+      # Save output for circuit team and pickle for future.
+      if save_pickle:
+        Path("Temp_Files/Pytorch/").mkdir(parents=True, exist_ok=True)
+        with open('Temp_Files/Pytorch/Backward_loss_gradients.pickle','wb') as handle:
+          pickle.dump(dout,handle, protocol=pickle.HIGHEST_PROTOCOL)
+      if save_output:
+        Path("Outputs/Pytorch/Backward/").mkdir(parents=True, exist_ok=True)
+        with open(f'Outputs/Pytorch/Backward/Backward_loss_gradients', mode='w') as f:
+          f.write(str(dout))
+    else:
+      with open('Temp_Files/Pytorch/Backward_loss_gradients.pickle','rb') as handle:
+        dout = pickle.load(handle)   
+        dout.requires_grad  = True
+        dout.retain_grad()
+    # System will return dout / loss derivatives
+    return dout, class_pred
+    
+    
+  def backward(self, loss_gradients=[], cache=[], Backward_prop=True, save_output=False, save_pickle=False):
+    dout = loss_gradients
+    grads={}
+    # Backward Propagation ---- ON CHIP
+    if Backward_prop: 
+      print(f"\tBackward Propagation")      
+      dOut={}       
+      dOut[8], grads['W8'], grads['b8']                     = TorchConvWB.backward              (dout,  cache['8']) 
+      dOut[7], grads['W7'], grads['gamma7'], grads['beta7'] = TorchConv_BatchNorm_ReLU.backward     (dOut[8], cache['7'])
+      dOut[6], grads['W6'], grads['gamma6'], grads['beta6'] = TorchConv_BatchNorm_ReLU.backward     (dOut[7], cache['6'])
+      # dOut[61],grads['W6'], grads['gamma6'], grads['beta6'] = Conv_BatchNorm_ReLU.backward     (dOut[7], cache['6'])
+      # dOut[60]                                              = TorchMaxPool.backward             (dOut[61], cache['61'])
+      # dOut[6]                                               = F.pad                            (dOut[60] , (0, 1, 0, 1))
+      dOut[5], grads['W5'], grads['gamma5'], grads['beta5'] = TorchConv_BatchNorm_ReLU.backward     (dOut[6], cache['5'])
+      dOut[4], grads['W4'], grads['gamma4'], grads['beta4'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[5], cache['4'])
+      dOut[3], grads['W3'], grads['gamma3'], grads['beta3'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[4], cache['3'])
+      dOut[2], grads['W2'], grads['gamma2'], grads['beta2'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[3], cache['2'])
+      dOut[1], grads['W1'], grads['gamma1'], grads['beta1'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[2], cache['1'])
+      dOut[0], grads['W0'], grads['gamma0'], grads['beta0'] = TorchConv_BatchNorm_ReLU_Pool.backward(dOut[1], cache['0'])
+
+      # Save pickle files for future use
+      if save_pickle:
+        Path("Temp_Files/Pytorch/").mkdir(parents=True, exist_ok=True)
         with open('Temp_Files/Pytorch/Backward_dOut.pickle','wb') as handle:
           pickle.dump(dOut,handle, protocol=pickle.HIGHEST_PROTOCOL)
         with open('Temp_Files/Pytorch/Backward_grads.pickle','wb') as handle:
           pickle.dump(grads,handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
-        with open('Temp_Files/Pytorch/Backward_dOut.pickle','rb') as handle:
-          dOut   = pickle.load(handle) 
-        with open('Temp_Files/Pytorch/Backward_grads.pickle','rb') as handle:
-          grads = pickle.load(handle)   
-      
-    Path("Outputs/Pytorch/Backward/").mkdir(parents=True, exist_ok=True)
-      
-    with open('Temp_Files/Pytorch/Backward_loss_gradients.pickle','wb') as handle:
-      pickle.dump(dout,handle, protocol=pickle.HIGHEST_PROTOCOL)
-    with open(f'Outputs/Pytorch/Backward/Backward_loss_gradients', mode='w') as f:
-      f.write(str(dout))
-    for _key in dOut.keys():
-      with open(f'Outputs/Pytorch/Backward/Layer_{_key}', mode='w') as f:
-        f.write(str(dOut[_key]))
-      try:
-        compare.write(f'\n\nLayer {_key} - Backward')
-        compare.write(str(dOut[_key][0,2,8:13,8:13]))
-      except:
-        compare = open(f'Outputs/Python/Forward/Comparison', mode='w')
-        compare.write(f'\n\nLayer {_key} - Backward')
-        compare.write(str(dOut[_key][0,2,8:13,8:13]))
-                  
+      # Load data from old pickle file
+      print(f"\tBackward Propagation - Load from file")      
+      with open('Temp_Files/Pytorch/Backward_dOut.pickle','rb') as handle:
+        dOut   = pickle.load(handle) 
+      with open('Temp_Files/Pytorch/Backward_grads.pickle','rb') as handle:
+        grads = pickle.load(handle)   
     
-    print('Finished')
-    return  Out, dOut, cache, grads
+    if save_output:
+      Path("Outputs/Pytorch/Backward/").mkdir(parents=True, exist_ok=True)
+      for _key in dOut.keys():
+        with open(f'Outputs/Pytorch/Backward/Layer_{_key}', mode='w') as f:
+          f.write(str(dOut[_key]))
+        try:
+          compare.write(f'\n\nLayer {_key} - Backward')
+          compare.write(str(dOut[_key][0,2,8:13,8:13]))
+        except:
+          compare = open(f'Outputs/Pytorch/Forward/Comparison', mode='w')
+          compare.write(f'\n\nLayer {_key} - Backward')
+          compare.write(str(dOut[_key][0,2,8:13,8:13]))
+                  
+    return  dOut, grads
 
 
-  @staticmethod
-  def forward(x, w, gamma, beta, conv_param, bn_param, pool_param):
-    a, conv_cache = Conv.forward(x, w, conv_param)
-    an, bn_cache = SpatialBatchNorm.forward(a, gamma, beta, bn_param)
-    s, relu_cache = ReLU.forward(an)
-    out, pool_cache = MaxPool.forward(s, pool_param)
-    cache = (conv_cache, bn_cache, relu_cache, pool_cache)
-    return out, cache
-
-  @staticmethod
-  def backward(dout, cache):
-    conv_cache, bn_cache, relu_cache, pool_cache = cache
-    ds = MaxPool.backward(dout, pool_cache)
-    dan = ReLU.backward(ds, relu_cache)
-    da, dgamma, dbeta = SpatialBatchNorm.backward(dan, bn_cache)
-    dx, dw = Conv.backward(da, conv_cache)
-    return dx, dw, dgamma, dbeta
-
-
-  @staticmethod
-  def forward(x, gamma, beta, bn_param):
+  def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None, Forward_Prop=True, Compute_Loss=True, Backward_prop=True, save_output=True, save_pickle=True, is_training=True):
     """
-    Computes the forward pass for spatial batch normalization.
-
-    Inputs:
-    - x: Input data of shape (N, C, H, W)
-    - gamma: Scale parameter, of shape (C,)
-    - beta: Shift parameter, of shape (C,)
-    - bn_param: Dictionary with the following keys:
-      - mode: 'train' or 'test'; required
-      - eps: Constant for numeric stability
-      - momentum: Constant for running mean / variance. momentum=0 means that
-      old information is discarded completely at every time step, while
-      momentum=1 means that new information is never incorporated. The
-      default of momentum=0.9 should work well in most situations.
-      - running_mean: Array of shape (C,) giving running mean of features
-      - running_var Array of shape (C,) giving running variance of features
-
-    Returns a tuple of:
-    - out: Output data, of shape (N, C, H, W)
-    - cache: Values needed for the backward pass
+    Perform one iteration of the training
     """
-    out, cache = None, None
+    
+    Forward_Out, cache      = self.forward  (X=X, 
+                                         Forward_Prop=Forward_Prop, 
+                                         is_training=is_training, 
+                                         save_output=save_output, 
+                                         save_pickle=save_pickle)
+    
+    loss_gradients, classes = self.loss    (gt_boxes=gt_boxes,
+                                            out=Forward_Out[8] ,
+                                            gt_classes=gt_classes, 
+                                            num_boxes=num_boxes, 
+                                            Compute_Loss=Compute_Loss, 
+                                            save_output=save_output, 
+                                            save_pickle=save_pickle)
+    
+    Backward_Out, grads     = self.backward (loss_gradients=loss_gradients, 
+                                         cache=cache, 
+                                         Backward_prop=Backward_prop, 
+                                         save_output=save_output, 
+                                         save_pickle=save_pickle)
+    
+    print('\t--> Iteration complete.\n\n')
 
-    N,C,H,W = x.shape
-    pre_m = x.permute(1,0,2,3).reshape(C,-1).T
-    pre_m_normolized, cache= BatchNorm.forward(pre_m, gamma, beta, bn_param)
-    out = pre_m_normolized.T.reshape(C, N, H, W).permute(1,0,2,3)
-
-
-    return out, cache
-
-  @staticmethod
-  def backward(dout, cache):
-    """
-    Computes the backward pass for spatial batch normalization.
-    Inputs:
-    - dout: Upstream derivatives, of shape (N, C, H, W)
-    - cache: Values from the forward pass
-    Returns a tuple of:
-    - dx: Gradient with respect to inputs, of shape (N, C, H, W)
-    - dgamma: Gradient with respect to scale parameter, of shape (C,)
-    - dbeta: Gradient with respect to shift parameter, of shape (C,)
-    """
-    dx, dgamma, dbeta = None, None, None
-
-    N,C,H,W = dout.shape
-    pre_m = dout.permute(1,0,2,3).reshape(C,-1).T
-    dx, dgamma, dbeta = BatchNorm.backward_alt(pre_m, cache)
-    dx =dx.T.reshape(C, N, H, W).permute(1,0,2,3)
-
-    return dx, dgamma, dbeta
-
+    return Forward_Out, Backward_Out, cache, grads, loss_gradients
 ################################################################################
 ################################################################################
 #################   Fast Implementations and Sandwich Layers  ##################
 ################################################################################
 ################################################################################
 
-class TorchFastConv(object):
+class TorchConv(object):
 
   @staticmethod
   def forward(x, w, conv_param):
@@ -844,7 +747,7 @@ class TorchFastConv(object):
       dx, dw = torch.zeros_like(tx), torch.zeros_like(layer.weight)
     return dx, dw
 
-class TorchFastConvWB(object):
+class TorchConvWB(object):
 
   @staticmethod
   def forward(x, w, b, conv_param):
@@ -873,7 +776,7 @@ class TorchFastConvWB(object):
     #   dx, dw, db = torch.zeros_like(tx), torch.zeros_like(layer.weight), torch.zeros_like(layer.bias)
     return dx, dw, db
 
-class TorchFastMaxPool(object):
+class TorchMaxPool(object):
 
   @staticmethod
   def forward(x, pool_param):
@@ -910,7 +813,7 @@ class TorchConv_ReLU(object):
     - out: Output from the ReLU
     - cache: Object to give to the backward pass
     """
-    a, conv_cache = FastConv.forward(x, w, conv_param)
+    a, conv_cache = TorchConv.forward(x, w, conv_param)
     out, relu_cache = ReLU.forward(a)
     cache = (conv_cache, relu_cache)
     return out, cache
@@ -921,8 +824,8 @@ class TorchConv_ReLU(object):
     Backward pass for the conv-relu convenience layer.
     """
     conv_cache, relu_cache = cache
-    da = ReLU.backward(dout, relu_cache)
-    dx, dw = FastConv.backward(da, conv_cache)
+    da = TorchReLU.backward(dout, relu_cache)
+    dx, dw = TorchConv.backward(da, conv_cache)
     return dx, dw
 
 class TorchConv_ReLU_Pool(object):
@@ -939,9 +842,9 @@ class TorchConv_ReLU_Pool(object):
     - out: Output from the pooling layer
     - cache: Object to give to the backward pass
     """
-    a, conv_cache = FastConv.forward(x, w, conv_param)
+    a, conv_cache = TorchConv.forward(x, w, conv_param)
     s, relu_cache = ReLU.forward(a)
-    out, pool_cache = FastMaxPool.forward(s, pool_param)
+    out, pool_cache = TorchMaxPool.forward(s, pool_param)
     cache = (conv_cache, relu_cache, pool_cache)
     return out, cache
 
@@ -951,47 +854,359 @@ class TorchConv_ReLU_Pool(object):
     Backward pass for the conv-relu-pool convenience layer
     """
     conv_cache, relu_cache, pool_cache = cache
-    ds = FastMaxPool.backward(dout, pool_cache)
-    da = ReLU.backward(ds, relu_cache)
-    dx, dw = FastConv.backward(da, conv_cache)
+    ds = TorchMaxPool.backward(dout, pool_cache)
+    da = TorchReLU.backward(ds, relu_cache)
+    dx, dw = TorchConv.backward(da, conv_cache)
     return dx, dw
+
+class TorchBatchNorm(object):
+
+  @staticmethod
+  def forward(x, gamma, beta, bn_param):
+    """
+    Forward pass for batch normalization.
+
+    During training the sample mean and (uncorrected) sample variance are
+    computed from minibatch statistics and used to normalize the incoming data.
+    During training we also keep an exponentially decaying running mean of the
+    mean and variance of each feature, and these averages are used to normalize
+    data at test-time.
+
+    At each timestep we update the running averages for mean and variance using
+    an exponential decay based on the momentum parameter:
+
+    running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+    running_var = momentum * running_var + (1 - momentum) * sample_var
+
+    Note that the batch normalization paper suggests a different test-time
+    behavior: they compute sample mean and variance for each feature using a
+    large number of training images rather than using a running average. For
+    this implementation we have chosen to use running averages instead since
+    they do not require an additional estimation step; the PyTorch
+    implementation of batch normalization also uses running averages.
+
+    Input:
+    - x: Data of shape (N, D)
+    - gamma: Scale parameter of shape (D,)
+    - beta: Shift paremeter of shape (D,)
+    - bn_param: Dictionary with the following keys:
+      - mode: 'train' or 'test'; required
+      - eps: Constant for numeric stability
+      - momentum: Constant for running mean / variance.
+      - running_mean: Array of shape (D,) giving running mean of features
+      - running_var Array of shape (D,) giving running variance of features
+
+    Returns a tuple of:
+    - out: of shape (N, D)
+    - cache: A tuple of values needed in the backward pass
+    """
+    mode = bn_param['mode']
+    eps = bn_param.get('eps', 1e-5)
+    momentum = bn_param.get('momentum', 0.9)
+
+    N, D = x.shape
+    running_mean = bn_param.get('running_mean', torch.zeros(D, dtype=x.dtype, device=x.device))
+    running_var = bn_param.get('running_var', torch.zeros(D, dtype=x.dtype, device=x.device))
+
+    out, cache = None, None
+    if mode == 'train':
+      #######################################################################
+      # TODO: Implement the training-time forward pass for batch norm.      #
+      # Use minibatch statistics to compute the mean and variance, use      #
+      # these statistics to normalize the incoming data, and scale and      #
+      # shift the normalized data using gamma and beta.                     #
+      #                                                                     #
+      # You should store the output in the variable out. Any intermediates  #
+      # that you need for the backward pass should be stored in the cache   #
+      # variable.                                                           #
+      #                                                                     #
+      # You should also use your computed sample mean and variance together #
+      # with the momentum variable to update the running mean and running   #
+      # variance, storing your result in the running_mean and running_var   #
+      # variables.                                                          #
+      #                                                                     #
+      # Note that though you should be keeping track of the running         #
+      # variance, you should normalize the data based on the standard       #
+      # deviation (square root of variance) instead!                        # 
+      # Referencing the original paper (https://arxiv.org/abs/1502.03167)   #
+      # might prove to be helpful.                                          #
+      #######################################################################
+      # Replace "pass" statement with your code
+      #step1: calculate mean
+      mu = 1./N * torch.sum(x, axis = 0)
+      running_mean = momentum * running_mean + (1 - momentum) * mu
+
+      #step2: subtract mean vector of every trainings example
+      xmu = x - mu
+      
+      #step3: following the lower branch - calculation denominator
+      sq = xmu ** 2
+      
+      #step4: calculate variance
+      var = 1./N * torch.sum(sq, axis = 0)
+      running_var = momentum * running_var + (1 - momentum) * var
+      #step5: add eps for numerical stability, then sqrt
+      sqrtvar = torch.sqrt(var + eps)
+
+      #step6: invert sqrtwar
+      ivar = 1./sqrtvar
+    
+      #step7: execute normalization
+      xhat = xmu * ivar
+
+      #step8: Nor the two transformation steps
+      #print(gamma)
+
+      gammax = gamma * xhat
+
+      #step9
+      out = gammax + beta
+
+      cache = (xhat,gamma,xmu,ivar,sqrtvar,var,eps)
+      #######################################################################
+      #                           END OF YOUR CODE                          #
+      #######################################################################
+    elif mode == 'test':
+      #######################################################################
+      # TODO: Implement the test-time forward pass for batch normalization. #
+      # Use the running mean and variance to normalize the incoming data,   #
+      # then scale and shift the normalized data using gamma and beta.      #
+      # Store the result in the out variable.                               #
+      #######################################################################
+      # Replace "pass" statement with your code
+      normolized = ((x - running_mean)/(running_var+ eps)**(1/2))
+      out = normolized * gamma + beta
+      #######################################################################
+      #                           END OF YOUR CODE                          #
+      #######################################################################
+    else:
+      raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
+
+    # Store the updated running means back into bn_param
+    bn_param['running_mean'] = running_mean.detach()
+    bn_param['running_var'] = running_var.detach()
+
+    return out, cache
+
+  @staticmethod
+  def backward(dout, cache):
+    """
+    Backward pass for batch normalization.
+
+    For this implementation, you should write out a computation graph for
+    batch normalization on paper and propagate gradients backward through
+    intermediate nodes.
+
+    Inputs:
+    - dout: Upstream derivatives, of shape (N, D)
+    - cache: Variable of intermediates from batchnorm_forward.
+
+    Returns a tuple of:
+    - dx: Gradient with respect to inputs x, of shape (N, D)
+    - dgamma: Gradient with respect to scale parameter gamma, of shape (D,)
+    - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
+    """
+    dx, dgamma, dbeta = None, None, None
+    ###########################################################################
+    # TODO: Implement the backward pass for batch normalization. Store the    #
+    # results in the dx, dgamma, and dbeta variables.                         #
+    # Referencing the original paper (https://arxiv.org/abs/1502.03167)       #
+    # might prove to be helpful.                                              #
+    # Don't forget to implement train and test mode separately.               #
+    ###########################################################################
+    # Replace "pass" statement with your code
+    xhat,gamma,xmu,ivar,sqrtvar,var,eps = cache
+    
+    N,D = dout.shape
+
+    #step9
+    dbeta = torch.sum(dout, axis=0)
+    dgammax = dout #not necessary, but more understandable
+
+    #step8
+    dgamma = torch.sum(dgammax*xhat, axis=0)
+    dxhat = dgammax * gamma
+
+    #step7
+    divar = torch.sum(dxhat*xmu, axis=0)
+    dxmu1 = dxhat * ivar
+
+    #step6
+    dsqrtvar = -1. /(sqrtvar**2) * divar
+
+    #step5
+    dvar = 0.5 * 1. /torch.sqrt(var+eps) * dsqrtvar
+
+    #step4
+    dsq = 1. /N * torch.ones((N,D),device = dout.device) * dvar
+
+    #step3
+    dxmu2 = 2 * xmu * dsq
+
+    #step2
+    dx1 = (dxmu1 + dxmu2)
+    dmu = -1 * torch.sum(dxmu1+dxmu2, axis=0)
+
+    #step1
+    dx2 = 1. /N * torch.ones((N,D),device = dout.device) * dmu
+
+    #step0
+    dx = dx1 + dx2
+    ###########################################################################
+    #                             END OF YOUR CODE                            #
+    ###########################################################################
+
+    return dx, dgamma, dbeta
+
+  @staticmethod
+  def backward_alt(dout, cache):
+    """
+    Alternative backward pass for batch normalization.
+    For this implementation you should work out the derivatives for the batch
+    normalizaton backward pass on paper and simplify as much as possible. You
+    should be able to derive a simple expression for the backward pass. 
+    See the jupyter notebook for more hints.
+    
+    Note: This implementation should expect to receive the same cache variable
+    as batchnorm_backward, but might not use all of the values in the cache.
+
+    Inputs / outputs: Same as batchnorm_backward
+    """
+    dx, dgamma, dbeta = None, None, None
+    ###########################################################################
+    # TODO: Implement the backward pass for batch normalization. Store the    #
+    # results in the dx, dgamma, and dbeta variables.                         #
+    #                                                                         #
+    # After computing the gradient with respect to the centered inputs, you   #
+    # should be able to compute gradients with respect to the inputs in a     #
+    # single statement; our implementation fits on a single 80-character line.#
+    ###########################################################################
+    # Replace "pass" statement with your code
+    xhat,gamma,xmu,ivar,sqrtvar,var,eps = cache
+    N,D = dout.shape
+  #get the dimensions of the input/output
+    dbeta = torch.sum(dout, dim=0)
+    dgamma = torch.sum(xhat * dout, dim=0)
+    dx = (gamma*ivar/N) * (N*dout - xhat*dgamma - dbeta)
+    ###########################################################################
+    #                             END OF YOUR CODE                            #
+    ###########################################################################
+
+    return dx, dgamma, dbeta
+
+class TorchSpatialBatchNorm(object):
+
+  @staticmethod
+  def forward(x, gamma, beta, bn_param):
+    """
+    Computes the forward pass for spatial batch normalization.
+
+    Inputs:
+    - x: Input data of shape (N, C, H, W)
+    - gamma: Scale parameter, of shape (C,)
+    - beta: Shift parameter, of shape (C,)
+    - bn_param: Dictionary with the following keys:
+      - mode: 'train' or 'test'; required
+      - eps: Constant for numeric stability
+      - momentum: Constant for running mean / variance. momentum=0 means that
+      old information is discarded completely at every time step, while
+      momentum=1 means that new information is never incorporated. The
+      default of momentum=0.9 should work well in most situations.
+      - running_mean: Array of shape (C,) giving running mean of features
+      - running_var Array of shape (C,) giving running variance of features
+
+    Returns a tuple of:
+    - out: Output data, of shape (N, C, H, W)
+    - cache: Values needed for the backward pass
+    """
+    out, cache = None, None
+
+    ###########################################################################
+    # TODO: Implement the forward pass for spatial batch normalization.       #
+    #                                                                         #
+    # HINT: You can implement spatial batch normalization by calling the      #
+    # vanilla version of batch normalization you implemented above.           #
+    # Your implementation should be very short; ours is less than five lines. #
+    ###########################################################################
+    # Replace "pass" statement with your code
+    N,C,H,W = x.shape
+    pre_m = x.permute(1,0,2,3).reshape(C,-1).T
+    pre_m_normolized, cache= TorchBatchNorm.forward(pre_m, gamma, beta, bn_param)
+    out = pre_m_normolized.T.reshape(C, N, H, W).permute(1,0,2,3)
+    ###########################################################################
+    #                             END OF YOUR CODE                            #
+    ###########################################################################
+
+    return out, cache
+
+  @staticmethod
+  def backward(dout, cache):
+    """
+    Computes the backward pass for spatial batch normalization.
+    Inputs:
+    - dout: Upstream derivatives, of shape (N, C, H, W)
+    - cache: Values from the forward pass
+    Returns a tuple of:
+    - dx: Gradient with respect to inputs, of shape (N, C, H, W)
+    - dgamma: Gradient with respect to scale parameter, of shape (C,)
+    - dbeta: Gradient with respect to shift parameter, of shape (C,)
+    """
+    dx, dgamma, dbeta = None, None, None
+
+    ###########################################################################
+    # TODO: Implement the backward pass for spatial batch normalization.      #
+    #                                                                         #
+    # HINT: You can implement spatial batch normalization by calling the      #
+    # vanilla version of batch normalization you implemented above.           #
+    # Your implementation should be very short; ours is less than five lines. #
+    ###########################################################################
+    # Replace "pass" statement with your code
+    N,C,H,W = dout.shape
+    pre_m = dout.permute(1,0,2,3).reshape(C,-1).T
+    dx, dgamma, dbeta = TorchBatchNorm.backward_alt(pre_m, cache)
+    dx =dx.T.reshape(C, N, H, W).permute(1,0,2,3)
+    ###########################################################################
+    #                             END OF YOUR CODE                            #
+    ###########################################################################
+
+    return dx, dgamma, dbeta
 
 class TorchConv_BatchNorm_ReLU(object):
 
   @staticmethod
   def forward(x, w, gamma, beta, conv_param, bn_param):
-    a, conv_cache = FastConv.forward(x, w, conv_param)
-    an, bn_cache = SpatialBatchNorm.forward(a, gamma, beta, bn_param)
-    out, relu_cache = ReLU.forward(an)
+    a, conv_cache = TorchConv.forward(x, w, conv_param)
+    an, bn_cache = TorchSpatialBatchNorm.forward(a, gamma, beta, bn_param)
+    out, relu_cache = TorchReLU.forward(an)
     cache = (conv_cache, bn_cache, relu_cache)
     return out, cache
 
   @staticmethod
   def backward(dout, cache):
     conv_cache, bn_cache, relu_cache = cache
-    dan = ReLU.backward(dout, relu_cache)
-    da, dgamma, dbeta = SpatialBatchNorm.backward(dan, bn_cache)
-    dx, dw = FastConv.backward(da, conv_cache)
+    dan = TorchReLU.backward(dout, relu_cache)
+    da, dgamma, dbeta = TorchSpatialBatchNorm.backward(dan, bn_cache)
+    dx, dw = TorchConv.backward(da, conv_cache)
     return dx, dw, dgamma, dbeta
 
 class TorchConv_BatchNorm_ReLU_Pool(object):
 
   @staticmethod
   def forward(x, w, gamma, beta, conv_param, bn_param, pool_param):
-    a, conv_cache = FastConv.forward(x, w, conv_param)
-    an, bn_cache = SpatialBatchNorm.forward(a, gamma, beta, bn_param)
-    s, relu_cache = ReLU.forward(an)
-    out, pool_cache = FastMaxPool.forward(s, pool_param)
+    a, conv_cache = TorchConv.forward(x, w, conv_param)
+    an, bn_cache = TorchSpatialBatchNorm.forward(a, gamma, beta, bn_param)
+    s, relu_cache = TorchReLU.forward(an)
+    out, pool_cache = TorchMaxPool.forward(s, pool_param)
     cache = (conv_cache, bn_cache, relu_cache, pool_cache)
     return out, cache
 
   @staticmethod
   def backward(dout, cache):
     conv_cache, bn_cache, relu_cache, pool_cache = cache
-    ds = FastMaxPool.backward(dout, pool_cache)
-    dan = ReLU.backward(ds, relu_cache)
-    da, dgamma, dbeta = SpatialBatchNorm.backward(dan, bn_cache)
-    dx, dw = FastConv.backward(da, conv_cache)
+    ds = TorchMaxPool.backward(dout, pool_cache)
+    dan = TorchReLU.backward(ds, relu_cache)
+    da, dgamma, dbeta = TorchSpatialBatchNorm.backward(dan, bn_cache)
+    dx, dw = TorchConv.backward(da, conv_cache)
     return dx, dw, dgamma, dbeta
 
 class TorchReLU(object):

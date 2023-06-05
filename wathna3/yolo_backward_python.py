@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import pickle
 import torch
@@ -516,19 +517,33 @@ class DeepConvNet(object): # Python based CNN Implementation
     
     # Forward Propagation simplified code ---- ON CHIP
     if Forward_Prop:
-      print(f"\tForward Propagation")
+      print(f"\tForward Propagation", end=' ')
       Out={}
+      print(' 0 ', end='')
       Out[0] , cache['0']  = PythonConv_BatchNorm_ReLU_Pool.forward(X      , self.p['W0'], self.p['gamma0'],self.p['beta0'],self.p[f'conv0'],self.bn_params[0],pool_param)
+      print(' 1 ', end='')
       Out[1] , cache['1']  = PythonConv_BatchNorm_ReLU_Pool.forward(Out[0] , self.p['W1'], self.p['gamma1'],self.p['beta1'],self.p[f'conv1'],self.bn_params[1],pool_param)
+      print(' 2 ', end='')
       Out[2] , cache['2']  = PythonConv_BatchNorm_ReLU_Pool.forward(Out[1] , self.p['W2'], self.p['gamma2'],self.p['beta2'],self.p[f'conv2'],self.bn_params[2],pool_param)
+      print(' 3 ', end='')
       Out[3] , cache['3']  = PythonConv_BatchNorm_ReLU_Pool.forward(Out[2] , self.p['W3'], self.p['gamma3'],self.p['beta3'],self.p[f'conv3'],self.bn_params[3],pool_param)
+      print(' 4 ', end='')
       Out[4] , cache['4']  = PythonConv_BatchNorm_ReLU_Pool.forward(Out[3] , self.p['W4'], self.p['gamma4'],self.p['beta4'],self.p[f'conv4'],self.bn_params[4],pool_param)
+      print(' 5 ', end='')
       Out[5] , cache['5']  = PythonConv_BatchNorm_ReLU.forward     (Out[4] , self.p['W5'], self.p['gamma5'],self.p['beta5'],self.p[f'conv5'],self.bn_params[5]) 
+      print(' 6 ', end='')
       Out[60]              = F.pad                                 (Out[5] , (0, 1, 0, 1))
+      print(' 6 ', end='')
       Out[61], cache['61'] = PythonMaxPool.forward                 (Out[60], slowpool_param)
+      print(' 6 ', end='')
       Out[6] , cache['6']  = PythonConv_BatchNorm_ReLU.forward     (Out[61], self.p['W6'], self.p['gamma6'],self.p['beta6'],self.p[f'conv6'],self.bn_params[6]) 
-      Out[7] , cache['7']  = PythonConv_BatchNorm_ReLU.forward     (Out[6] , self.p['W7'], self.p['gamma7'],self.p['beta7'],self.p[f'conv7'],self.bn_params[7]) 
+      print(' 7 ', end='')
+      Out[7] , cache['7']  = PythonConv_BatchNorm_ReLU.forward     (Out[6] , self.p['W7'], self.p['gamma7'],self.p['beta7'],self.p[f'conv7'],self.bn_params[7])
+      # conv_param['pad']   = 0 
+      print(' 8 ', end='')
       Out[8] , cache['8']  = PythonConvB.forward                   (Out[7] , self.p['W8'], self.p['b8']                    ,self.p[f'conv8'])
+      
+      print(' ')
       out = Out[8] 
           
       # Save pickle for future loading 
@@ -563,16 +578,17 @@ class DeepConvNet(object): # Python based CNN Implementation
     # Return the output of forward propagation
     return Out, cache
     
-  def loss(self, gt_boxes=None, gt_classes=None, num_boxes=None, Compute_Loss=True, save_output=False, save_pickle=False):
+  def loss(self, out=[], gt_boxes=None, gt_classes=None, num_boxes=None, Compute_Loss=True, save_output=False, save_pickle=False):
     """
     Evaluate loss and gradient for the deep convolutional network.
     Input / output: Same API as ThreeLayerConvNet.
     """
+    print(f"\tLoss Calculation.")
     
     #  Compute_Loss_On_system
-    if Compute_Loss:
-      print(f"\tLoss Calculation done on system.")
-      out.requires_grad = True
+    if Compute_Loss or not os.path.isfile('Temp_Files/Python/Backward_loss_gradients.pickle'):
+      try: out.requires_grad = True
+      except: pass
       out.retain_grad()
       # Reshape the output 
       scores          = out
@@ -608,7 +624,8 @@ class DeepConvNet(object): # Python based CNN Implementation
       # Calculate loss gradients
       grads = {}
       out = scores
-      out.requires_grad = True
+      try: out.requires_grad = True
+      except: pass
       loss.backward(retain_graph=True)
       dout = out.grad
         
@@ -620,27 +637,42 @@ class DeepConvNet(object): # Python based CNN Implementation
       if save_output:
         with open(f'Outputs/Python/Backward/Backward_loss_gradients', mode='w') as f:
           f.write(str(dout))
-      
+    else:
+      with open('Temp_Files/Python/Backward_loss_gradients.pickle','rb') as handle:
+        dout = pickle.load(handle)   
+        dout.requires_grad  = True
+        dout.retain_grad()
+      class_pred=[]
     # System will return dout / loss derivatives
     return dout, class_pred
     
   def backward(self, loss_gradients=[], cache=[], Backward_prop=True, save_output=False, save_pickle=False):
     dout = loss_gradients
-    
+    grads={}
     # Backward Propagation ---- ON CHIP
     if Backward_prop: 
-      print(f"\tBackward Propagation")      
+      print(f"\tBackward Propagation", end=' --> ')      
       dOut={}       
+      print(f' 8 ', end='')
       dOut[8], grads['W8'], grads['b8']                     = PythonConvB.backward                   (dout,  cache['8']) 
+      print(f' 7 ', end='')
       dOut[7], grads['W7'], grads['gamma7'], grads['beta7'] = PythonConv_BatchNorm_ReLU.backward     (dOut[8], cache['7'])
+      print(f' 6 ', end='')
       dOut[6], grads['W6'], grads['gamma6'], grads['beta6'] = PythonConv_BatchNorm_ReLU.backward     (dOut[7], cache['6'])
+      print(f' 5 ', end='')
       dOut[5], grads['W5'], grads['gamma5'], grads['beta5'] = PythonConv_BatchNorm_ReLU.backward     (dOut[6], cache['5'])
+      print(f' 4 ', end='')
       dOut[4], grads['W4'], grads['gamma4'], grads['beta4'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[5], cache['4'])
+      print(f' 3 ', end='')
       dOut[3], grads['W3'], grads['gamma3'], grads['beta3'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[4], cache['3'])
+      print(f' 2 ', end='')
       dOut[2], grads['W2'], grads['gamma2'], grads['beta2'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[3], cache['2'])
+      print(f' 1 ', end='')
       dOut[1], grads['W1'], grads['gamma1'], grads['beta1'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[2], cache['1'])
+      print(f' 0 ', end='')
       dOut[0], grads['W0'], grads['gamma0'], grads['beta0'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[1], cache['0'])
-
+      print(' ')
+      
       # Save pickle files for future use
       if save_pickle:
         Path("Temp_Files/Python/").mkdir(parents=True, exist_ok=True)
@@ -657,6 +689,7 @@ class DeepConvNet(object): # Python based CNN Implementation
         grads  = pickle.load(handle)  
     
     if save_output:
+      Path("Outputs/Python/Backward/").mkdir(parents=True, exist_ok=True)
       for _key in dOut.keys():
         with open(f'Outputs/Python/Backward/Layer_{_key}', mode='w') as f:
           f.write(str(dOut[_key]))
@@ -670,40 +703,34 @@ class DeepConvNet(object): # Python based CNN Implementation
                   
     return  dOut, grads
 
-  def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
+  def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None, Forward_Prop=True, Compute_Loss=True, Backward_prop=True, save_output=True, save_pickle=True, is_training=True):
     """
     Perform one iteration of the training
     """
-    Forward_Prop = False
-    Compute_Loss = False
-    Backward_prop = True
     
-    is_training=True
-    
-    save_output = False
-    save_pickle = False
-    
-    Forward_Out, cache   = self.forward (X=X, 
+    Forward_Out, cache      = self.forward (X=X, 
                                          Forward_Prop=Forward_Prop, 
                                          is_training=is_training, 
                                          save_output=save_output, 
                                          save_pickle=save_pickle)
     
-    loss_gradients, classes = self.loss (gt_boxes=gt_boxes, 
+    loss_gradients, classes = self.loss (out=Forward_Out[8],
+                                         gt_boxes=gt_boxes, 
                                          gt_classes=gt_classes, 
                                          num_boxes=num_boxes, 
                                          Compute_Loss=Compute_Loss, 
                                          save_output=save_output, 
                                          save_pickle=save_pickle)
     
-    dOut, grads          = self.backward(loss_gradients=loss_gradients, 
+    Backward_Out, grads     = self.backward(loss_gradients=loss_gradients, 
                                          cache=cache, 
                                          Backward_prop=Backward_prop, 
                                          save_output=save_output, 
                                          save_pickle=save_pickle)
-    
-    print('Iteration complete.')
-    print(' ')
+  
+    print('\t--> Iteration complete.\n\n')
+
+    return Forward_Out, Backward_Out, cache, grads, loss_gradients
 
 ################################################################################
 ################################################################################
@@ -711,7 +738,7 @@ class DeepConvNet(object): # Python based CNN Implementation
 ################################################################################
 ################################################################################
 
-class PythonConv(object):
+class PythonConvB(object):
 
   @staticmethod
   def forward(x, w, b, conv_param, _debug=False):
@@ -795,11 +822,11 @@ class PythonConv(object):
          
     if pad != 0:
       dx = dx[:,:,1:-1,1:-1] #delete padded "pixels"
-    print(dx.shape)   
+    # print(dx.shape)   
 
     return dx, dw, db
   
-class PythonConvB(object):
+class PythonConv(object):
 
   @staticmethod
   def forward(x, w, conv_param, _debug=False):
@@ -879,7 +906,7 @@ class PythonConvB(object):
             dx[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW]+=w[f] * dout[n,f,height,width]
          
     dx = dx[:,:,1:-1,1:-1] #delete padded "pixels"
-    print(dx.shape)   
+    # print(dx.shape)   
 
     return dx, dw
   
@@ -984,7 +1011,7 @@ class PythonConv_ReLU(object):
   @staticmethod
   def forward(x, w, conv_param):
     """
-    A convenience layer that performs a convolution followed by a ReLU.
+    A convenience layer that performs a convolution followed by a PythonReLU.
     Inputs:
     - x: Input to the convolutional layer
     - w, b, conv_param: Weights and parameters for the convolutional layer
@@ -992,8 +1019,8 @@ class PythonConv_ReLU(object):
     - out: Output from the ReLU
     - cache: Object to give to the backward pass
     """
-    a, conv_cache = Conv.forward(x, w, conv_param)
-    out, relu_cache = ReLU.forward(a)
+    a, conv_cache = PythonConv.forward(x, w, conv_param)
+    out, relu_cache = PythonReLU.forward(a)
     cache = (conv_cache, relu_cache)
     return out, cache
 
@@ -1003,8 +1030,8 @@ class PythonConv_ReLU(object):
     Backward pass for the conv-relu convenience layer.
     """
     conv_cache, relu_cache = cache
-    da = ReLU.backward(dout, relu_cache)
-    dx, dw = Conv.backward(da, conv_cache)
+    da = PythonReLU.backward(dout, relu_cache)
+    dx, dw = PythonConv.backward(da, conv_cache)
     return dx, dw
 
 class PythonConv_ReLU_Pool(object):
@@ -1021,9 +1048,9 @@ class PythonConv_ReLU_Pool(object):
     - out: Output from the pooling layer
     - cache: Object to give to the backward pass
     """
-    a, conv_cache = Conv.forward(x, w, conv_param)
-    s, relu_cache = ReLU.forward(a)
-    out, pool_cache = MaxPool.forward(s, pool_param)
+    a, conv_cache = PythonConv.forward(x, w, conv_param)
+    s, relu_cache = PythonReLU.forward(a)
+    out, pool_cache = PythonMaxPool.forward(s, pool_param)
     cache = (conv_cache, relu_cache, pool_cache)
     return out, cache
 
@@ -1033,9 +1060,9 @@ class PythonConv_ReLU_Pool(object):
     Backward pass for the conv-relu-pool convenience layer
     """
     conv_cache, relu_cache, pool_cache = cache
-    ds = MaxPool.backward(dout, pool_cache)
-    da = ReLU.backward(ds, relu_cache)
-    dx, dw = Conv.backward(da, conv_cache)
+    ds = PythonMaxPool.backward(dout, pool_cache)
+    da = PythonReLU.backward(ds, relu_cache)
+    dx, dw = PythonConv.backward(da, conv_cache)
     return dx, dw
 
 class PythonBatchNorm(object):
@@ -1251,7 +1278,7 @@ class PythonSpatialBatchNorm(object):
 
     N,C,H,W = x.shape
     pre_m = x.permute(1,0,2,3).reshape(C,-1).T
-    pre_m_normolized, cache= BatchNorm.forward(pre_m, gamma, beta, bn_param)
+    pre_m_normolized, cache= PythonBatchNorm.forward(pre_m, gamma, beta, bn_param)
     out = pre_m_normolized.T.reshape(C, N, H, W).permute(1,0,2,3)
 
 
@@ -1273,7 +1300,7 @@ class PythonSpatialBatchNorm(object):
 
     N,C,H,W = dout.shape
     pre_m = dout.permute(1,0,2,3).reshape(C,-1).T
-    dx, dgamma, dbeta = BatchNorm.backward_alt(pre_m, cache)
+    dx, dgamma, dbeta = PythonBatchNorm.backward_alt(pre_m, cache)
     dx =dx.T.reshape(C, N, H, W).permute(1,0,2,3)
 
     return dx, dgamma, dbeta
@@ -1282,36 +1309,36 @@ class PythonConv_BatchNorm_ReLU(object):
 
   @staticmethod
   def forward(x, w, gamma, beta, conv_param, bn_param):
-    a, conv_cache = Conv.forward(x, w, conv_param)
-    an, bn_cache = SpatialBatchNorm.forward(a, gamma, beta, bn_param)
-    out, relu_cache = ReLU.forward(an)
+    a, conv_cache = PythonConv.forward(x, w, conv_param)
+    an, bn_cache = PythonSpatialBatchNorm.forward(a, gamma, beta, bn_param)
+    out, relu_cache = PythonReLU.forward(an)
     cache = (conv_cache, bn_cache, relu_cache)
     return out, cache
 
   @staticmethod
   def backward(dout, cache):
     conv_cache, bn_cache, relu_cache = cache
-    dan = ReLU.backward(dout, relu_cache)
-    da, dgamma, dbeta = SpatialBatchNorm.backward(dan, bn_cache)
-    dx, dw = Conv.backward(da, conv_cache)
+    dan = PythonReLU.backward(dout, relu_cache)
+    da, dgamma, dbeta = PythonSpatialBatchNorm.backward(dan, bn_cache)
+    dx, dw = PythonConv.backward(da, conv_cache)
     return dx, dw, dgamma, dbeta
 
 class PythonConv_BatchNorm_ReLU_Pool(object):
 
   @staticmethod
   def forward(x, w, gamma, beta, conv_param, bn_param, pool_param):
-    a, conv_cache = Conv.forward(x, w, conv_param)
-    an, bn_cache = SpatialBatchNorm.forward(a, gamma, beta, bn_param)
-    s, relu_cache = ReLU.forward(an)
-    out, pool_cache = MaxPool.forward(s, pool_param)
+    a, conv_cache = PythonConv.forward(x, w, conv_param)
+    an, bn_cache = PythonSpatialBatchNorm.forward(a, gamma, beta, bn_param)
+    s, relu_cache = PythonReLU.forward(an)
+    out, pool_cache = PythonMaxPool.forward(s, pool_param)
     cache = (conv_cache, bn_cache, relu_cache, pool_cache)
     return out, cache
 
   @staticmethod
   def backward(dout, cache):
     conv_cache, bn_cache, relu_cache, pool_cache = cache
-    ds = MaxPool.backward(dout, pool_cache)
-    dan = ReLU.backward(ds, relu_cache)
-    da, dgamma, dbeta = SpatialBatchNorm.backward(dan, bn_cache)
-    dx, dw = Conv.backward(da, conv_cache)
+    ds = PythonMaxPool.backward(dout, pool_cache)
+    dan = PythonReLU.backward(ds, relu_cache)
+    da, dgamma, dbeta = PythonSpatialBatchNorm.backward(dan, bn_cache)
+    dx, dw = PythonConv.backward(da, conv_cache)
     return dx, dw, dgamma, dbeta

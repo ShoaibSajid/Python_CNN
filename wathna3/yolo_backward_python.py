@@ -518,17 +518,17 @@ class DeepConvNet(object): # Python based CNN Implementation
     if Forward_Prop:
       print(f"\tForward Propagation")
       Out={}
-      Out[0] , cache['0']  = Conv_BatchNorm_ReLU_Pool.forward(X      , self.p['W0'], self.p['gamma0'],self.p['beta0'],self.p[f'conv0'],self.bn_params[0],pool_param)
-      Out[1] , cache['1']  = Conv_BatchNorm_ReLU_Pool.forward(Out[0] , self.p['W1'], self.p['gamma1'],self.p['beta1'],self.p[f'conv1'],self.bn_params[1],pool_param)
-      Out[2] , cache['2']  = Conv_BatchNorm_ReLU_Pool.forward(Out[1] , self.p['W2'], self.p['gamma2'],self.p['beta2'],self.p[f'conv2'],self.bn_params[2],pool_param)
-      Out[3] , cache['3']  = Conv_BatchNorm_ReLU_Pool.forward(Out[2] , self.p['W3'], self.p['gamma3'],self.p['beta3'],self.p[f'conv3'],self.bn_params[3],pool_param)
-      Out[4] , cache['4']  = Conv_BatchNorm_ReLU_Pool.forward(Out[3] , self.p['W4'], self.p['gamma4'],self.p['beta4'],self.p[f'conv4'],self.bn_params[4],pool_param)
-      Out[5] , cache['5']  = Conv_BatchNorm_ReLU.forward     (Out[4] , self.p['W5'], self.p['gamma5'],self.p['beta5'],self.p[f'conv5'],self.bn_params[5]) 
-      Out[60]              = F.pad                           (Out[5] , (0, 1, 0, 1))
-      Out[61], cache['61'] = MaxPool.forward                 (Out[60], slowpool_param)
-      Out[6] , cache['6']  = Conv_BatchNorm_ReLU.forward     (Out[61], self.p['W6'], self.p['gamma6'],self.p['beta6'],self.p[f'conv6'],self.bn_params[6]) 
-      Out[7] , cache['7']  = Conv_BatchNorm_ReLU.forward     (Out[6] , self.p['W7'], self.p['gamma7'],self.p['beta7'],self.p[f'conv7'],self.bn_params[7]) 
-      Out[8] , cache['8']  = ConvB.forward              (Out[7] , self.p['W8'], self.p['b8']                    ,self.p[f'conv8'])
+      Out[0] , cache['0']  = PythonConv_BatchNorm_ReLU_Pool.forward(X      , self.p['W0'], self.p['gamma0'],self.p['beta0'],self.p[f'conv0'],self.bn_params[0],pool_param)
+      Out[1] , cache['1']  = PythonConv_BatchNorm_ReLU_Pool.forward(Out[0] , self.p['W1'], self.p['gamma1'],self.p['beta1'],self.p[f'conv1'],self.bn_params[1],pool_param)
+      Out[2] , cache['2']  = PythonConv_BatchNorm_ReLU_Pool.forward(Out[1] , self.p['W2'], self.p['gamma2'],self.p['beta2'],self.p[f'conv2'],self.bn_params[2],pool_param)
+      Out[3] , cache['3']  = PythonConv_BatchNorm_ReLU_Pool.forward(Out[2] , self.p['W3'], self.p['gamma3'],self.p['beta3'],self.p[f'conv3'],self.bn_params[3],pool_param)
+      Out[4] , cache['4']  = PythonConv_BatchNorm_ReLU_Pool.forward(Out[3] , self.p['W4'], self.p['gamma4'],self.p['beta4'],self.p[f'conv4'],self.bn_params[4],pool_param)
+      Out[5] , cache['5']  = PythonConv_BatchNorm_ReLU.forward     (Out[4] , self.p['W5'], self.p['gamma5'],self.p['beta5'],self.p[f'conv5'],self.bn_params[5]) 
+      Out[60]              = F.pad                                 (Out[5] , (0, 1, 0, 1))
+      Out[61], cache['61'] = PythonMaxPool.forward                 (Out[60], slowpool_param)
+      Out[6] , cache['6']  = PythonConv_BatchNorm_ReLU.forward     (Out[61], self.p['W6'], self.p['gamma6'],self.p['beta6'],self.p[f'conv6'],self.bn_params[6]) 
+      Out[7] , cache['7']  = PythonConv_BatchNorm_ReLU.forward     (Out[6] , self.p['W7'], self.p['gamma7'],self.p['beta7'],self.p[f'conv7'],self.bn_params[7]) 
+      Out[8] , cache['8']  = PythonConvB.forward                   (Out[7] , self.p['W8'], self.p['b8']                    ,self.p[f'conv8'])
       out = Out[8] 
           
       # Save pickle for future loading 
@@ -631,15 +631,15 @@ class DeepConvNet(object): # Python based CNN Implementation
     if Backward_prop: 
       print(f"\tBackward Propagation")      
       dOut={}       
-      dOut[8], grads['W8'], grads['b8']                     = ConvB.backward                   (dout,  cache['8']) 
-      dOut[7], grads['W7'], grads['gamma7'], grads['beta7'] = Conv_BatchNorm_ReLU.backward     (dOut[8], cache['7'])
-      dOut[6], grads['W6'], grads['gamma6'], grads['beta6'] = Conv_BatchNorm_ReLU.backward     (dOut[7], cache['6'])
-      dOut[5], grads['W5'], grads['gamma5'], grads['beta5'] = Conv_BatchNorm_ReLU.backward     (dOut[6], cache['5'])
-      dOut[4], grads['W4'], grads['gamma4'], grads['beta4'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[5], cache['4'])
-      dOut[3], grads['W3'], grads['gamma3'], grads['beta3'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[4], cache['3'])
-      dOut[2], grads['W2'], grads['gamma2'], grads['beta2'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[3], cache['2'])
-      dOut[1], grads['W1'], grads['gamma1'], grads['beta1'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[2], cache['1'])
-      dOut[0], grads['W0'], grads['gamma0'], grads['beta0'] = Conv_BatchNorm_ReLU_Pool.backward(dOut[1], cache['0'])
+      dOut[8], grads['W8'], grads['b8']                     = PythonConvB.backward                   (dout,  cache['8']) 
+      dOut[7], grads['W7'], grads['gamma7'], grads['beta7'] = PythonConv_BatchNorm_ReLU.backward     (dOut[8], cache['7'])
+      dOut[6], grads['W6'], grads['gamma6'], grads['beta6'] = PythonConv_BatchNorm_ReLU.backward     (dOut[7], cache['6'])
+      dOut[5], grads['W5'], grads['gamma5'], grads['beta5'] = PythonConv_BatchNorm_ReLU.backward     (dOut[6], cache['5'])
+      dOut[4], grads['W4'], grads['gamma4'], grads['beta4'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[5], cache['4'])
+      dOut[3], grads['W3'], grads['gamma3'], grads['beta3'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[4], cache['3'])
+      dOut[2], grads['W2'], grads['gamma2'], grads['beta2'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[3], cache['2'])
+      dOut[1], grads['W1'], grads['gamma1'], grads['beta1'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[2], cache['1'])
+      dOut[0], grads['W0'], grads['gamma0'], grads['beta0'] = PythonConv_BatchNorm_ReLU_Pool.backward(dOut[1], cache['0'])
 
       # Save pickle files for future use
       if save_pickle:
@@ -711,9 +711,7 @@ class DeepConvNet(object): # Python based CNN Implementation
 ################################################################################
 ################################################################################
 
-
-# Convolution with Bias
-class ConvB(object):
+class PythonConv(object):
 
   @staticmethod
   def forward(x, w, b, conv_param, _debug=False):
@@ -800,9 +798,8 @@ class ConvB(object):
     print(dx.shape)   
 
     return dx, dw, db
-
-# Convolution without Bias
-class Conv(object):
+  
+class PythonConvB(object):
 
   @staticmethod
   def forward(x, w, conv_param, _debug=False):
@@ -885,8 +882,8 @@ class Conv(object):
     print(dx.shape)   
 
     return dx, dw
- 
-class ReLU(object):
+  
+class PythonReLU(object):
 
     @staticmethod
     def forward(x, alpha=0.1):
@@ -909,7 +906,7 @@ class ReLU(object):
 
         return dx
     
-class MaxPool(object):
+class PythonMaxPool(object):
 
   @staticmethod
   def forward(x, pool_param):
@@ -982,7 +979,7 @@ class MaxPool(object):
 
     return dx
 
-class Conv_ReLU(object):
+class PythonConv_ReLU(object):
 
   @staticmethod
   def forward(x, w, conv_param):
@@ -1010,7 +1007,7 @@ class Conv_ReLU(object):
     dx, dw = Conv.backward(da, conv_cache)
     return dx, dw
 
-class Conv_ReLU_Pool(object):
+class PythonConv_ReLU_Pool(object):
 
   @staticmethod
   def forward(x, w, conv_param, pool_param):
@@ -1041,7 +1038,7 @@ class Conv_ReLU_Pool(object):
     dx, dw = Conv.backward(da, conv_cache)
     return dx, dw
 
-class BatchNorm(object):
+class PythonBatchNorm(object):
 
   @staticmethod
   def forward(x, gamma, beta, bn_param):
@@ -1225,7 +1222,7 @@ class BatchNorm(object):
 
     return dx, dgamma, dbeta
 
-class SpatialBatchNorm(object):
+class PythonSpatialBatchNorm(object):
 
   @staticmethod
   def forward(x, gamma, beta, bn_param):
@@ -1281,7 +1278,7 @@ class SpatialBatchNorm(object):
 
     return dx, dgamma, dbeta
 
-class Conv_BatchNorm_ReLU(object):
+class PythonConv_BatchNorm_ReLU(object):
 
   @staticmethod
   def forward(x, w, gamma, beta, conv_param, bn_param):
@@ -1299,7 +1296,7 @@ class Conv_BatchNorm_ReLU(object):
     dx, dw = Conv.backward(da, conv_cache)
     return dx, dw, dgamma, dbeta
 
-class Conv_BatchNorm_ReLU_Pool(object):
+class PythonConv_BatchNorm_ReLU_Pool(object):
 
   @staticmethod
   def forward(x, w, gamma, beta, conv_param, bn_param, pool_param):

@@ -442,6 +442,18 @@ else:
 	
 if __name__ == '__main__':
 	if os.path.isdir("Outputs"): shutil.rmtree("Outputs")
-	pytorch_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
-	python__model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
+	
+	im_data, gt_boxes, gt_classes, num_obj = b
+	im_data, gt_boxes, gt_classes, num_obj = im_data[0].unsqueeze(0), gt_boxes[0].unsqueeze(0), gt_classes[0].unsqueeze(0), num_obj[0].unsqueeze(0)
+	Out, dOut, cache, grads = python__model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
+	
+	im_data, gt_boxes, gt_classes, num_obj = b
+	im_data, gt_boxes, gt_classes, num_obj = im_data[0].unsqueeze(0), gt_boxes[0].unsqueeze(0), gt_classes[0].unsqueeze(0), num_obj[0].unsqueeze(0)
+	_Out, _dOut, _cache, _grads = pytorch_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
+
+
+	import eecs598
+	print(f"Error= {eecs598.grad.rel_error(dOut[0], _dOut[0])}")
+	print(f"Error= {eecs598.grad.rel_error(dOut[1], _dOut[1])}")
+	print('Finished')
 

@@ -159,8 +159,8 @@ Project Link: [https://github.com/ShoaibSajid/Python_CNN/tree/Yolov2-Tiny](https
 ## Acknowledgments
 
 * [Sereiwatha Ros](https://github.com/Nayuki-Sunder)
-* [Ali Haroon Turk]()
-* [Sawera Khurshid]()
+<!-- * [Ali Haroon Turk]()
+* [Sawera Khurshid]() -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

@@ -405,7 +405,7 @@ if _Load_Weights:
 	python_model = weightloader.load(python_model, model, './data/pretrained/yolov2-tiny-voc.weights')
 	# weightloader.load(model, self.scratch_torch, './yolov2-tiny-voc.weights')
   
-_Dataset = False
+_Dataset = True
 if _Dataset:
 	dataset = 'voc0712trainval'
 	imdb_name = 'voc_2007_trainval+voc_2012_trainval'

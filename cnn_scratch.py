@@ -239,9 +239,9 @@ class DeepConvNet(object):
   def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
     forward_prop = False
     cal_loss = True
-    backward_prop = True
+    backward_prop = False
     self.save_pickle = False
-    self.save_output = False
+    self.save_output = True
     
     if forward_prop:
       out, cache, FOut = self.forward(X)
@@ -289,13 +289,15 @@ class DeepConvNet(object):
     
     # Save output for circuit team.
     if self.save_output:
-      save_txt(f'Outputs/Python/Forward/Out_Last_Layer'  , out)
-      save_txt(f'Outputs/Python/Forward/Out_Layer'       , FOut)
-      # save_txt(f'Outputs/Python/Forward/cache_Layer'     , cache)
-      save_txt(f'Outputs/Python/Loss/loss'               , loss)
-      save_txt(f'Outputs/Python/Loss/loss_grad'          , loss_grad)
-      save_txt(f'Outputs/Python/Backward/lDout_Layer'    , lDout)
-      save_txt(f'Outputs/Python/Backward/grads'          , grads)
+      # save_txt(f'Outputs/Python/Forward/Out_Last_Layer'  , out)
+      # save_txt(f'Outputs/Python/Forward/Out_Layer'       , FOut)
+      # # save_txt(f'Outputs/Python/Forward/cache_Layer'     , cache)
+      # save_txt(f'Outputs/Python/Loss/loss'               , loss)
+      # save_txt(f'Outputs/Python/Loss/loss_grad'          , loss_grad)
+      # save_txt(f'Outputs/Python/Backward/lDout_Layer'    , lDout)
+      # save_txt(f'Outputs/Python/Backward/grads'          , grads)
+      save_txt(f'Outputs/Python/Parameters/'             , self.params)
+      save_txt(f'Outputs/Python/Input_Image'             , X)
   
     return out, cache, loss, loss_grad, lDout, grads
   

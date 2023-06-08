@@ -93,6 +93,10 @@ To run the Pytorch version, run the file as follow
 python yolov2tiny_torch.py
 ```
 
+To run this in Jupyter Notebook, you can run using the file Jupyter_Notebook_CNN_Python.ipynb
+
+ 
+
 In the file cnn_python.py, Line no 240-244, you can give arguments to control the forward, backward propagation and enable or disable the generation of output files.
 It is shown below as well.
 <br />
@@ -109,6 +113,10 @@ To run this in VSCode, you can find the .vscode/launch.json file is already adde
   <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolov2-Tiny">
     <img src="readme_src/Running_VSCode.png" alt="MSIS Lab" >
   </a>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

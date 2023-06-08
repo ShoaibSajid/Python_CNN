@@ -237,10 +237,10 @@ class DeepConvNet(object):
 
 
   def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
-    forward_prop = False  # Perform forward propagation or load saved file.
+    forward_prop = True  # Perform forward propagation or load saved file.
     cal_loss = True       # Perform loss calculation or load save file
-    backward_prop = False # Perform backward propagation or load saved file
-    self.save_pickle = False  # Save output in form of pickle file
+    backward_prop = True # Perform backward propagation or load saved file
+    self.save_pickle = True  # Save output in form of pickle file
     self.save_output = True   # Save output in form of text files
     
     if forward_prop:

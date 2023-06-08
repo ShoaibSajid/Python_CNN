@@ -118,7 +118,6 @@ To run this in VSCode, you can find the .vscode/launch.json file is already adde
 
 
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 Once you run the code, it should generate an output as shown in the figure below.
 Since the output has a large size so it is not possible to add the output data in the git repository.

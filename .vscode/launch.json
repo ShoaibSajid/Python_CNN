@@ -5,100 +5,25 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Exp Shoaib",
+			"name": "Yolov2-Tiny - Python",
 			"type": "python",
 			"request": "launch",
-			"program": "/home/gpuadmin/Python_CNN/wathna/exp_shoaib.py",
+			"program": "./yolov2tiny_python.py",
 			"console": "integratedTerminal",
 			"justMyCode": true,
-			"cwd": "/home/gpuadmin/Python_CNN/wathna"
-		},
-
-		
-		{
-			"name": "Exp both",
-			"type": "python",
-			"request": "launch",
-			"program": "/home/gpuadmin/Python_CNN/wathna/exp_shoaib.py",
-			"console": "integratedTerminal",
-			"justMyCode": true,
-			"cwd": "/home/gpuadmin/Python_CNN/wathna"
-		},
-
-		
-		{
-			"name": "Yolov2-tiny original",
-			"type": "python",
-			"request": "launch",
-			"program": "/home/gpuadmin/Python_CNN/wathna_new/yolov2tiny.py",
-			"console": "integratedTerminal",
-			"justMyCode": true,
-			"cwd": "/home/gpuadmin/Python_CNN/wathna"
-		},
-
-		
-		{
-			"name": "Exp Scratch",
-			"type": "python",
-			"request": "launch",
-			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna_2/exp_scartch.py",
-			"console": "integratedTerminal",
-			"justMyCode": true,
-			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna_2/"
-		},
-
-		
-		{
-			"name": "Wathna3 - Yolov2 Tiny",
-			"type": "python",
-			"request": "launch",
-			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/yolov2tiny.py",
-			"console": "integratedTerminal",
-			"justMyCode": true,
-			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/"
-		},
-
-		
-		{
-			"name": "Wathna3 - Yolov2 Tiny - Python",
-			"type": "python",
-			"request": "launch",
-			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/yolov2tiny_python.py",
-			"console": "integratedTerminal",
-			"justMyCode": true,
-			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/"
-		},
-
-		
-		{
-			"name": "Wathna3 - Yolov2 Tiny _ Pytorch",
-			"type": "python",
-			"request": "launch",
-			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/yolov2tiny_pytorch.py",
-			"console": "integratedTerminal",
-			"justMyCode": true,
-			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna3/"
-		},
-
-		
-		{
-			"name": "Wathna6 - Yolov2 Tiny _ Pytorch",
-			"type": "python",
-			"request": "launch",
-			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna6/yolov2tiny.py",
-			"console": "integratedTerminal",
-			"justMyCode": true,
-			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna6"
-		},
-		
-		{
-			"name": "Wathna6 - Yolov2 Tiny _ Python",
-			"type": "python",
-			"request": "launch",
-			"program": "/home/gpuadmin/Shoaib/Python_CNN/wathna6/yolov2tiny_python.py",
-			"console": "integratedTerminal",
-			"justMyCode": true,
-			"cwd": "/home/gpuadmin/Shoaib/Python_CNN/wathna6"
 		}
+		,
+		{
+			"name": "YoloV2-Tiny - Torch",
+			"type": "python",
+			"request": "launch",
+			"program": "./yolov2tiny_torch.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+		}
+
+
+
+
 	]
 }

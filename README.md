@@ -12,7 +12,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolo">
-    <img src="logo.jpg" alt="MSIS Lab" >
+    <img src="readme_src/logo.jpg" alt="MSIS Lab" >
   </a>
 
 <h1 align="center">A Convolution Neural Network (CNN) From Scratch
@@ -59,19 +59,18 @@
 <!-- Dependencies -->
 ## Dependencies
  
+Create an enviornment using the following command.
 
+
+```bash
+conda create -n yolov2_tiny pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=10.2 -c pytorch
+```
+
+Install the required packages using the following command
 ```bash
 pip install tqdm matplotlib mnist==0.2.2 numpy
-
 ```
 
-```bash
-conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=10.2 -c pytorch
-
-# or
-
-pip install torch==1.12.1+cu102 torchvision==0.13.1+cu102 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu102
-```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -82,18 +81,34 @@ pip install torch==1.12.1+cu102 torchvision==0.13.1+cu102 torchaudio==0.12.1 --e
 
 <!-- Usage -->
 ## Usage
-Run the following file:
+You can run this in the command terminal as instructed below.
 
+For python version, run the file as follow
 ```bash
-python wathna/exp_both.py
+python yolov2tiny_python.py
 ```
-or open the following file using jupyter / google colab
+
+To run the Pytorch version, run the file as follow
+```bash
+python yolov2tiny_torch.py
 ```
-wathna/exp_both.ipynb
-```
+
+To run this in VSCode, you can find the .vscode/launch.json file is already added. Simply run as given in this screenshot.
+<br />
+  <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolo">
+    <img src="readme_src/Running_VSCode.png" alt="MSIS Lab" >
+  </a>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+Once you run the code, it should generate an output as shown in the figure below.
+Since the output has a large size so it is not possible to add the output data in the git repository.
+<br />
+  <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolo">
+    <img src="readme_src/Outputs.png" alt="MSIS Lab" >
+  </a>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
  
 

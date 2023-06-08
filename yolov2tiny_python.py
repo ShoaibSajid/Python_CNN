@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from dataset.factory import get_imdb
 from dataset.roidb import RoiDataset, detection_collate
 from loss import build_target, yolo_loss
-from cnn_scratch import *
+from cnn_python import *
 from pathlib import Path
 
 def prepare_im_data(img):

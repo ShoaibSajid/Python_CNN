@@ -11,7 +11,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolo">
+  <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolov2-Tiny">
     <img src="readme_src/logo.jpg" alt="MSIS Lab" >
   </a>
 
@@ -21,10 +21,10 @@
   <p align="center">
     We implemented the object detector using simple python code to have in-depth understanding and control over the forward and backward propagation.
     <br />
-    <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolo"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolov2-Tiny"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolo">View Demo</a>
+    <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolov2-Tiny">View Demo</a>
     ·
     <a href="https://github.com/ShoaibSajid/Python_CNN/issues">Report Bug</a>
     ·
@@ -95,7 +95,7 @@ python yolov2tiny_torch.py
 
 To run this in VSCode, you can find the .vscode/launch.json file is already added. Simply run as given in this screenshot.
 <br />
-  <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolo">
+  <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolov2-Tiny">
     <img src="readme_src/Running_VSCode.png" alt="MSIS Lab" >
   </a>
 
@@ -104,7 +104,7 @@ To run this in VSCode, you can find the .vscode/launch.json file is already adde
 Once you run the code, it should generate an output as shown in the figure below.
 Since the output has a large size so it is not possible to add the output data in the git repository.
 <br />
-  <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolo">
+  <a href="https://github.com/ShoaibSajid/Python_CNN/tree/Yolov2-Tiny">
     <img src="readme_src/Outputs.png" alt="MSIS Lab" >
   </a>
 
@@ -146,7 +146,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 Shoaib Sajid - shoaib.sajid.ss@gmail.com
 
-Project Link: [https://github.com/ShoaibSajid/Python_CNN/tree/Yolo](https://github.com/ShoaibSajid/Python_CNN/tree/Yolo)
+Project Link: [https://github.com/ShoaibSajid/Python_CNN/tree/Yolov2-Tiny](https://github.com/ShoaibSajid/Python_CNN/tree/Yolov2-Tiny)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

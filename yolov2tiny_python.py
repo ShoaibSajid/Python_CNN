@@ -1,4 +1,5 @@
 from pathlib import Path
+import pickle
 import torch
 from torch.utils.data import DataLoader
 from cnn_python import *

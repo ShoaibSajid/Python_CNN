@@ -286,15 +286,15 @@ class DeepConvNet(object):
     
     # Save output for circuit team.
     if self.save_output:
-      # save_txt(f'Outputs/Python/Forward/Out_Last_Layer'  , out)
-      # save_txt(f'Outputs/Python/Forward/Out_Layer'       , FOut)
-      # # save_txt(f'Outputs/Python/Forward/cache_Layer'     , cache)
-      # save_txt(f'Outputs/Python/Loss/loss'               , loss)
-      # save_txt(f'Outputs/Python/Loss/loss_grad'          , loss_grad)
-      # save_txt(f'Outputs/Python/Backward/lDout_Layer'    , lDout)
-      # save_txt(f'Outputs/Python/Backward/grads'          , grads)
-      # save_txt(f'Outputs/Python/Parameters/'             , self.params)
-      # save_txt(f'Outputs/Python/Input_Image'             , X)
+      save_txt(f'Outputs/Python/Forward/Out_Last_Layer'  , out)
+      save_txt(f'Outputs/Python/Forward/Out_Layer'       , FOut)
+      # save_txt(f'Outputs/Python/Forward/cache_Layer'     , cache)
+      save_txt(f'Outputs/Python/Loss/loss'               , loss)
+      save_txt(f'Outputs/Python/Loss/loss_grad'          , loss_grad)
+      save_txt(f'Outputs/Python/Backward/lDout_Layer'    , lDout)
+      save_txt(f'Outputs/Python/Backward/grads'          , grads)
+      save_txt(f'Outputs/Python/Parameters/'             , self.params)
+      save_txt(f'Outputs/Python/Input_Image'             , X)
       print('Outputs have been saved')
   
     return out, cache, loss, loss_grad, lDout, grads

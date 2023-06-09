@@ -108,6 +108,11 @@ Install the required packages using the following command
 pip install tqdm matplotlib mnist==0.2.2 numpy bz2file gdown
 ```
 
+Download the default input data
+```bash
+gdown --id 1B8hlZbsewj4RbEVM59yce0M3Nyz54KFQ
+```
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 

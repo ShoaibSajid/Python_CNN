@@ -239,13 +239,8 @@ class DeepConvNet(object):
 
 
   def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
-    forward_prop = True  # Perform forward propagation or load saved file.
-    cal_loss = True       # Perform loss calculation or load save file
-    backward_prop = True # Perform backward propagation or load saved file
-    self.save_pickle = True  # Save output in form of pickle file
-    self.save_output = True   # Save output in form of text files
     
-    if forward_prop:
+    if self.forward_prop:
       out, cache, FOut = self.forward(X)
       Path("Temp_Files/Python").mkdir(parents=True, exist_ok=True)
       with open('Temp_Files/Python/Forward_Out_last_layer.pickle','wb') as handle:
@@ -264,7 +259,7 @@ class DeepConvNet(object):
       with open('Temp_Files/Python/Forward_cache.pickle', 'rb') as handle:
         cache = pickle.load(handle)
    
-    if cal_loss:
+    if self.cal_loss:
       loss,   loss_grad = self.loss(out, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_boxes)
       with open('Temp_Files/Python/loss.pickle','wb') as handle:
         pickle.dump(loss,handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -276,7 +271,7 @@ class DeepConvNet(object):
       with open('Temp_Files/Python/loss_gradients.pickle', 'rb') as handle:
         loss_grad = pickle.load(handle)
         
-    if backward_prop:   
+    if self.backward_prop:   
       lDout, grads = self.backward(loss_grad, cache)
       with open('Temp_Files/Python/Backward_lDout.pickle','wb') as handle:
         pickle.dump(lDout,handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -298,8 +293,9 @@ class DeepConvNet(object):
       # save_txt(f'Outputs/Python/Loss/loss_grad'          , loss_grad)
       # save_txt(f'Outputs/Python/Backward/lDout_Layer'    , lDout)
       # save_txt(f'Outputs/Python/Backward/grads'          , grads)
-      save_txt(f'Outputs/Python/Parameters/'             , self.params)
-      save_txt(f'Outputs/Python/Input_Image'             , X)
+      # save_txt(f'Outputs/Python/Parameters/'             , self.params)
+      # save_txt(f'Outputs/Python/Input_Image'             , X)
+      print('Outputs have been saved')
   
     return out, cache, loss, loss_grad, lDout, grads
   

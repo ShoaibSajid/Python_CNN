@@ -105,7 +105,7 @@ conda create -n yolov2_tiny pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12
 
 Install the required packages using the following command
 ```bash
-pip install tqdm matplotlib mnist==0.2.2 numpy bz2file
+pip install tqdm matplotlib mnist==0.2.2 numpy bz2file gdown
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

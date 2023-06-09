@@ -80,9 +80,11 @@ Please download the Conda program from the website.
 https://conda.io/projects/conda/en/stable/user-guide/install/download.html
 
 Clone the repository using the following lines
+```bash
 git clone https://github.com/ShoaibSajid/Python_CNN
 cd Python_CNN
 git checkout Yolov2-Tiny
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

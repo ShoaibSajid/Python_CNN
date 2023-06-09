@@ -41,9 +41,11 @@
 <!-- TABLE OF CONTENTS -->
 ## Table of Contents
   <ol>
+    <li><a href="#Next">Next Steps</a></li>
+    <li><a href="#Enviornment">Setting Up Enviornment</a></li>
     <li><a href="#Dependencies">Dependencies</a></li>
     <li><a href="#Usage">Usage</a></li>
-    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#contributing">Contribution</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
@@ -56,9 +58,42 @@
 
 
 
+<!--  Next -->
+## Next
+- Add instructions in readme (conda, enviornment)
+- FP32 -> BFP16 / IEEE FP16
+- Pre-trained weight parameters
+- Find Python/Torch 32 to 16 bit conversion
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+ 
+
+
+
+<!-- Enviornment -->
+## Setting up enviornment
+
+Please download the Conda program from the website. 
+https://conda.io/projects/conda/en/stable/user-guide/install/download.html
+
+Clone the repository using the following lines
+git clone https://github.com/ShoaibSajid/Python_CNN
+cd Python_CNN
+git checkout Yolov2-Tiny
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+ 
+
+
+
 <!-- Dependencies -->
 ## Dependencies
- 
 Create an enviornment using the following command.
 
 
@@ -68,11 +103,11 @@ conda create -n yolov2_tiny pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12
 
 Install the required packages using the following command
 ```bash
-pip install tqdm matplotlib mnist==0.2.2 numpy
+pip install tqdm matplotlib mnist==0.2.2 numpy bz2file
 ```
 
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 
  

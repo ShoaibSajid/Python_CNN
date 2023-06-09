@@ -52,14 +52,14 @@ if _Dataloader:
 _Get_Next_Data = _Dataloader
 if _Get_Next_Data:
 	_data = next(train_data_iter)
-	im_data, gt_boxes, gt_classes, num_obj = _data
+	im_data, gt_boxes, gt_classes, num_boxes = _data
 
 	im_data     = im_data[0].unsqueeze(0)
 	gt_boxes    = gt_boxes[0].unsqueeze(0)
 	gt_classes  = gt_classes[0].unsqueeze(0)
-	num_obj     = num_obj[0].unsqueeze(0)
+	num_boxes   = num_boxes[0].unsqueeze(0)
 
-	__data = im_data, gt_boxes, gt_classes, num_obj
+	__data = im_data, gt_boxes, gt_classes, num_boxes
 
 	# Path("Input").mkdir(parents=True, exist_ok=True)
 	with open('Input_Data.pickle','wb') as handle:
@@ -73,8 +73,8 @@ else:
 	# 	gdown.download(url, output, quiet=False)
 	with open(default_data, 'rb') as handle:
 		b = pickle.load(handle)
-	im_data, gt_boxes, gt_classes, num_obj = b
-	__data = im_data, gt_boxes, gt_classes, num_obj
+	im_data, gt_boxes, gt_classes, num_boxes = b
+	__data = im_data, gt_boxes, gt_classes, num_boxes
 	print(f"\n\nLoading data from saved file\n\nImage (im_data[0,:3,66:69,66:69]\n{im_data[0,:3,66:69,66:69]}\n\n")
 	
 
@@ -84,5 +84,5 @@ if __name__ == '__main__':
 	python_model.backward_prop 	= False 	# Perform backward propagation or load saved file
 	python_model.save_pickle 	= True  	# Save output in form of pickle file
 	python_model.save_output 	= True   	# Save output in form of text files
-	Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
+	Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_boxes)
 

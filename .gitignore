@@ -6,3 +6,6 @@ layers/__pycache__
 *Temp_Files*
 *pkl
 *data/VOC*
+Backup*
+test*
+Input_Data.pickle

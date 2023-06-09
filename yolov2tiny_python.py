@@ -1,6 +1,7 @@
 from pathlib import Path
 import pickle
 import torch
+import gdown
 from torch.utils.data import DataLoader
 from cnn_python import *
 
@@ -17,7 +18,7 @@ if _Load_Weights:
 	weightloader = WeightLoader()
 	python_model = weightloader.load(python_model, model, './data/pretrained/yolov2-tiny-voc.weights')
 
-_Dataset = True
+_Dataset = False
 if _Dataset:
 	from dataset.factory import get_imdb
 	from dataset.roidb import RoiDataset, detection_collate
@@ -64,17 +65,18 @@ if _Get_Next_Data:
 	with open('Input/Input_Data.pickle','wb') as handle:
 		pickle.dump(__data,handle, protocol=pickle.HIGHEST_PROTOCOL)
 else:
-	with open('Input/Input_Data.pickle', 'rb') as handle:
+	default_data = 'Input/Input_Data.pickle'
+	# if not os.path.isfile(default_data):
+	# 	print('Deafult data file does not exist. Downlaoding file now.')
+	# 	url = 'https://drive.google.com/uc?id=1j1zyq0lRQ_BVqSS5zM2GHU3Q4c1qH0DP'
+	# 	output = default_data
+	# 	gdown.download(url, output, quiet=False)
+	with open(default_data, 'rb') as handle:
 		b = pickle.load(handle)
 	im_data, gt_boxes, gt_classes, num_obj = b
-	# im_data, gt_boxes, gt_classes, num_obj = im_data[0].unsqueeze(0), gt_boxes[0].unsqueeze(0), gt_classes[0].unsqueeze(0), num_obj[0].unsqueeze(0)
 	__data = im_data, gt_boxes, gt_classes, num_obj
 	print(f"\n\nLoading data from saved file\n\nImage (im_data[0,:3,66:69,66:69]\n{im_data[0,:3,66:69,66:69]}\n\n")
 	
-
-	# im = np.random.randn(1, 3, 416, 416)
-
-	# box_loss, iou_loss, class_loss = scratch.loss(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
 
 if __name__ == '__main__':
 	Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)

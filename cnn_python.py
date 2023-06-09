@@ -250,6 +250,7 @@ class DeepConvNet(object):
       with open('Temp_Files/Python/Forward_Out_all_layers.pickle','wb') as handle:
         pickle.dump(FOut,handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
+      print("Loading previous files for Forward Propagation.")
       with open('Temp_Files/Python/Forward_Out_last_layer.pickle', 'rb') as handle:
         out = pickle.load(handle)
         out.requires_grad = True
@@ -266,6 +267,7 @@ class DeepConvNet(object):
       with open('Temp_Files/Python/loss_gradients.pickle','wb') as handle:
         pickle.dump(loss_grad,handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
+      print("Loading previous files for Loss Calculation.")
       with open('Temp_Files/Python/loss.pickle', 'rb') as handle:
         loss = pickle.load(handle)
       with open('Temp_Files/Python/loss_gradients.pickle', 'rb') as handle:
@@ -278,6 +280,7 @@ class DeepConvNet(object):
       with open('Temp_Files/Python/Backward_grads.pickle','wb') as handle:
         pickle.dump(grads,handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
+      print("Loading previous files for Backward Propagation.")
       with open('Temp_Files/Python/Backward_lDout.pickle', 'rb') as handle:
         lDout = pickle.load(handle)
       with open('Temp_Files/Python/Backward_grads.pickle', 'rb') as handle:

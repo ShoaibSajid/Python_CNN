@@ -61,11 +61,11 @@ if _Get_Next_Data:
 
 	__data = im_data, gt_boxes, gt_classes, num_obj
 
-	Path("Input").mkdir(parents=True, exist_ok=True)
-	with open('Input/Input_Data.pickle','wb') as handle:
+	# Path("Input").mkdir(parents=True, exist_ok=True)
+	with open('Input_Data.pickle','wb') as handle:
 		pickle.dump(__data,handle, protocol=pickle.HIGHEST_PROTOCOL)
 else:
-	default_data = 'Input/Input_Data.pickle'
+	default_data = 'Input_Data.pickle'
 	# if not os.path.isfile(default_data):
 	# 	print('Deafult data file does not exist. Downlaoding file now.')
 	# 	url = 'https://drive.google.com/uc?id=1j1zyq0lRQ_BVqSS5zM2GHU3Q4c1qH0DP'
@@ -79,5 +79,10 @@ else:
 	
 
 if __name__ == '__main__':
+	python_model.forward_prop 	= False  	# Perform forward propagation or load saved file.
+	python_model.cal_loss 		= True      # Perform loss calculation or load save file
+	python_model.backward_prop 	= False 	# Perform backward propagation or load saved file
+	python_model.save_pickle 	= True  	# Save output in form of pickle file
+	python_model.save_output 	= True   	# Save output in form of text files
 	Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
 

@@ -1,40 +1,12 @@
 import numpy as np
+import bz2file as bz2
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from dataset.factory import get_imdb
-from dataset.roidb import RoiDataset, detection_collate
 from loss import build_target, yolo_loss
 from cnn_python import *
 from pathlib import Path
-
-def prepare_im_data(img):
-    """
-    Prepare image data that will be feed to network.
-
-    Arguments:
-    img -- PIL.Image object
-
-    Returns:
-    im_data -- tensor of shape (3, H, W).
-    im_info -- dictionary {height, width}
-
-    """
-
-    im_info = dict()
-    im_info['width'], im_info['height'] = img.size
-
-    # resize the image
-    H, W = cfg.input_size
-    im_data = img.resize((H, W))
-
-    # to torch tensor
-    im_data = torch.from_numpy(np.array(im_data)).float() / 255
-
-    im_data = im_data.permute(2, 0, 1).unsqueeze(0)
-
-    return im_data, im_info
 
 class WeightLoader(object):
 	def __init__(self):
@@ -298,11 +270,11 @@ class WeightLoader(object):
 		return self.scratch
 
 python_model = DeepConvNet(input_dims=(3, 416, 416),
-                        num_filters=[16, 32, 64, 128, 256, 512, 1024, 1024],
-                        max_pools=[0, 1, 2, 3, 4],
-                        weight_scale='kaiming',
-                        batchnorm=True,
-                        dtype=torch.float32, device='cpu')
+						num_filters=[16, 32, 64, 128, 256, 512, 1024, 1024],
+						max_pools=[0, 1, 2, 3, 4],
+						weight_scale='kaiming',
+						batchnorm=True,
+						dtype=torch.float32, device='cpu')
 
 _Load_Weights = True
 if _Load_Weights:
@@ -404,9 +376,11 @@ if _Load_Weights:
 	weightloader = WeightLoader()
 	python_model = weightloader.load(python_model, model, './data/pretrained/yolov2-tiny-voc.weights')
 	# weightloader.load(model, self.scratch_torch, './yolov2-tiny-voc.weights')
-  
+
 _Dataset = True
 if _Dataset:
+	from dataset.factory import get_imdb
+	from dataset.roidb import RoiDataset, detection_collate
 	dataset = 'voc0712trainval'
 	imdb_name = 'voc_2007_trainval+voc_2012_trainval'
 	imdbval_name ='voc_2007_test'
@@ -443,27 +417,25 @@ if _Get_Next_Data:
 	gt_boxes    = gt_boxes[0].unsqueeze(0)
 	gt_classes  = gt_classes[0].unsqueeze(0)
 	num_obj     = num_obj[0].unsqueeze(0)
- 
+
 	__data = im_data, gt_boxes, gt_classes, num_obj
 
-	Path("Temp_Files").mkdir(parents=True, exist_ok=True)
-	with open('Temp_Files/default_data.pickle','wb') as handle:
-		pickle.dump(_data,handle, protocol=pickle.HIGHEST_PROTOCOL)
+	Path("Input").mkdir(parents=True, exist_ok=True)
+	with open('Input/Input_Data.pickle','wb') as handle:
+		pickle.dump(__data,handle, protocol=pickle.HIGHEST_PROTOCOL)
 else:
-	with open('Temp_Files/default_data.pickle', 'rb') as handle:
+	with open('Input/Input_Data.pickle', 'rb') as handle:
 		b = pickle.load(handle)
 	im_data, gt_boxes, gt_classes, num_obj = b
-	im_data, gt_boxes, gt_classes, num_obj = im_data[0].unsqueeze(0), gt_boxes[0].unsqueeze(0), gt_classes[0].unsqueeze(0), num_obj[0].unsqueeze(0)
+	# im_data, gt_boxes, gt_classes, num_obj = im_data[0].unsqueeze(0), gt_boxes[0].unsqueeze(0), gt_classes[0].unsqueeze(0), num_obj[0].unsqueeze(0)
 	__data = im_data, gt_boxes, gt_classes, num_obj
 	print(f"\n\nLoading data from saved file\n\nImage (im_data[0,:3,66:69,66:69]\n{im_data[0,:3,66:69,66:69]}\n\n")
 	
 
-    # im = np.random.randn(1, 3, 416, 416)
+	# im = np.random.randn(1, 3, 416, 416)
 
-    # box_loss, iou_loss, class_loss = scratch.loss(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
-
-
+	# box_loss, iou_loss, class_loss = scratch.loss(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
 
 if __name__ == '__main__':
-    Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
+	Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_obj)
 

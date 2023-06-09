@@ -969,6 +969,42 @@ def generate_all_anchors(anchors, H, W):
 
     return all_anchors
 
+def prepare_im_data(img):
+	"""
+	Prepare image data that will be feed to network.
+
+	Arguments:
+	img -- PIL.Image object
+
+	Returns:
+	im_data -- tensor of shape (3, H, W).
+	im_info -- dictionary {height, width}
+
+	"""
+
+	im_info = dict()
+	im_info['width'], im_info['height'] = img.size
+
+	# resize the image
+	H, W = cfg.input_size
+	im_data = img.resize((H, W))
+
+	# to torch tensor
+	im_data = torch.from_numpy(np.array(im_data)).float() / 255
+
+	im_data = im_data.permute(2, 0, 1).unsqueeze(0)
+
+	return im_data, im_info
+
+def compressed_pickle(title, data):
+	with bz2.BZ2File(title + ".pbz2", 'w') as f:
+		pickle.dump(data, f)
+
+def decompress_pickle(file):
+	data = bz2.BZ2File(file, "rb")
+	data = pickle.load(data)
+	return data
+
 
 
 ################################################################################

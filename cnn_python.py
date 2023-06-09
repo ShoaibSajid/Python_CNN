@@ -7,6 +7,7 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import bz2file as bz2
 
 import torch
 from config import config as cfg

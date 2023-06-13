@@ -79,12 +79,15 @@ else:
 	
 
 if __name__ == '__main__':
-	python_model.forward_prop 	= False  	# Perform forward propagation or load saved file.
-	python_model.cal_loss 		= True      # Perform loss calculation or load save file
-	python_model.backward_prop 	= True		# Perform backward propagation or load saved file
-	python_model.save_pickle 	= True  	# Save output in form of pickle file
-	python_model.save_output 	= True   	# Save output in form of text files
-	python_model.save_each_layer= True   	# Save layer in form of text files
+	python_model.forward_prop 		= True  	# Perform forward propagation or load saved file.
+	python_model.cal_loss 			= True      # Perform loss calculation or load save file
+	python_model.backward_prop 		= True		# Perform backward propagation or load saved file
+ 
+	python_model.save_pickle 		= False  	# Save output in form of pickle file
+
+	python_model.save_layer_output 	= False   	# Save output for each layers
+	python_model.save_module_in_txt	= True   	# Save output for each module
+	python_model.save_module_in_hex = True   	# Save output in hex format
  
 	Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_boxes)
 

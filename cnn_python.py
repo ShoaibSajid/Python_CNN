@@ -321,8 +321,9 @@ class DeepConvNet(object):
 
 
   def train(self, X, gt_boxes=None, gt_classes=None, num_boxes=None):
-    self.save_txt=self.save_module_in_txt
-    self.save_hex=self.save_module_in_hex
+    if self.save_module_output:
+      self.save_txt=self.save_in_dec_format
+      self.save_hex=self.save_in_hex_format
     
     if self.forward_prop:
       out, cache, FOut = self.forward(X)
@@ -376,14 +377,14 @@ class DeepConvNet(object):
     
     # Save output for circuit team.
     if self.save_layer_output:
-      save_file(f'Python/Forward/Out_Last_Layer'              , out         , save_hex=self.save_hex )
-      save_file(f'Python/Forward/Out_Layer'                   , FOut        , save_hex=self.save_hex )
-      save_file(f'Python/Loss/loss'                           , loss        , save_hex=self.save_hex )
-      save_file(f'Python/Loss/loss_grad'                      , loss_grad   , save_hex=self.save_hex )
-      save_file(f'Python/Backward/Gradients_of_Input_Features', lDout       , save_hex=self.save_hex )
-      save_file(f'Python/Backward/Gradients_'                 , grads       , save_hex=self.save_hex )
-      save_file(f'Python/Parameters/'                         , self.params , save_hex=self.save_hex )
-      save_file(f'Python/Input_Image'                         , X           , save_hex=self.save_hex )
+      save_file(f'Python/Forward/Out_Last_Layer'              , out         , save_hex=self.save_in_hex_format, save_txt=self.save_in_dec_format )
+      save_file(f'Python/Forward/Out_Layer'                   , FOut        , save_hex=self.save_in_hex_format, save_txt=self.save_in_dec_format )
+      save_file(f'Python/Loss/loss'                           , loss        , save_hex=self.save_in_hex_format, save_txt=self.save_in_dec_format )
+      save_file(f'Python/Loss/loss_grad'                      , loss_grad   , save_hex=self.save_in_hex_format, save_txt=self.save_in_dec_format )
+      save_file(f'Python/Backward/Gradients_of_Input_Features', lDout       , save_hex=self.save_in_hex_format, save_txt=self.save_in_dec_format )
+      save_file(f'Python/Backward/Gradients_'                 , grads       , save_hex=self.save_in_hex_format, save_txt=self.save_in_dec_format )
+      save_file(f'Python/Input_Image'                         , X           , save_hex=self.save_in_hex_format, save_txt=self.save_in_dec_format )
+      save_file(f'Python/Parameters/'                         , self.params , save_hex=self.save_in_hex_format, save_txt=self.save_in_dec_format )
       # save_file(f'Python/Forward/cache_Layer'                 , cache       , save_hex=self.save_hex )
       print('Outputs have been saved')
   
@@ -392,7 +393,7 @@ class DeepConvNet(object):
   
   
   def forward(self, X):
-    print(f'\nThis is python-based forward propagation code', end=' --> ')
+    print(f'\nThis is python-based forward propagation code\n')
     y = 1
     X = X.to(self.dtype)
     mode = 'test' if y is None else 'train'
@@ -508,7 +509,7 @@ class DeepConvNet(object):
     
     save_file('Input' , Out[5], module='Pad', layer_no=6, save_hex=self.save_hex, save_txt=self.save_txt, phase=self.phase)
     Out[60]            = F.pad                                  (Out[5] , (0, 1, 0, 1))
-    save_file('Output', Out[6], module='Pad', layer_no=6, save_hex=self.save_hex, save_txt=self.save_txt, phase=self.phase)
+    save_file('Output', Out[60], module='Pad', layer_no=6, save_hex=self.save_hex, save_txt=self.save_txt, phase=self.phase)
     
     
     Out[61],cache['60']= Python_MaxPool.forward                 (Out[60]                , 
@@ -1729,13 +1730,13 @@ class Python_Conv(object):
     - dw: Gradient with respect to w
     - db: Gradient with respect to b
     """
+    x, w, conv_param = cache
     save_file('Input'               , x, module='Conv', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
     save_file('Weights'             , w, module='Conv', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
     save_file('Loss_Gradients'      ,dout,module='Conv',layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
     
     dx, dw  = None, None
 
-    x, w, conv_param = cache
     pad = conv_param['pad']
     stride = conv_param['stride']
     N,F,H_dout,W_dout = dout.shape
@@ -1828,6 +1829,7 @@ class Python_ConvB(object):
     - db: Gradient with respect to b
     """
     
+    x, w, b, conv_param = cache
     save_file('Input'               , x,  module='ConvWB', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
     save_file('Weights'             , w,  module='ConvWB', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
     save_file('Bias'                , b,  module='ConvWB', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
@@ -1836,7 +1838,6 @@ class Python_ConvB(object):
     
     dx, dw, db = None, None, None
 
-    x, w, b, conv_param = cache
     pad = conv_param['pad']
     stride = conv_param['stride']
     N,F,H_dout,W_dout = dout.shape
@@ -1914,12 +1915,12 @@ class Python_MaxPool(object):
     - dx: Gradient with respect to x
     """
     
+    x, pool_param = cache
     save_file('Input_Features'      , x  , module='MaxPool', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
     save_file('Loss_Gradients'      ,dout, module='MaxPool', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
     
     dx = None
 
-    x, pool_param = cache
     N,C,H,W = x.shape
     stride = pool_param['stride']
     pool_width = pool_param['pool_width']
@@ -2206,10 +2207,10 @@ class Python_ReLU(object):
 
     @staticmethod
     def backward(dout, cache, alpha=0.1, layer_no=[], save_txt=False, save_hex=False, phase=[]):
+        dx, x = None, cache
         save_file('Input_Features'      , x  , module='ReLU', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
         save_file('Loss_Gradients'      ,dout, module='ReLU', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
         
-        dx, x = None, cache
 
         dl = torch.ones_like(x)
         dl[x < 0] = alpha

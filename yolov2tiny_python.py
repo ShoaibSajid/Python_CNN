@@ -1,8 +1,6 @@
 from pathlib import Path
 import pickle
 import torch
-import gdown
-from torch.utils.data import DataLoader
 from cnn_python import *
 
 python_model = DeepConvNet(input_dims=(3, 416, 416),
@@ -44,6 +42,7 @@ if _Dataset:
 
 _Dataloader = _Dataset
 if _Dataloader:
+	from torch.utils.data import DataLoader
 	train_dataloader = DataLoader(train_dataset, batch_size=64,
 									shuffle=True, num_workers=2,
 									collate_fn=detection_collate, drop_last=True)
@@ -70,6 +69,7 @@ else:
 	# 	print('Deafult data file does not exist. Downlaoding file now.')
 	# 	url = 'https://drive.google.com/uc?id=1j1zyq0lRQ_BVqSS5zM2GHU3Q4c1qH0DP'
 	# 	output = default_data
+	#	import gdown
 	# 	gdown.download(url, output, quiet=False)
 	with open(default_data, 'rb') as handle:
 		b = pickle.load(handle)
@@ -81,8 +81,10 @@ else:
 if __name__ == '__main__':
 	python_model.forward_prop 	= False  	# Perform forward propagation or load saved file.
 	python_model.cal_loss 		= True      # Perform loss calculation or load save file
-	python_model.backward_prop 	= False 	# Perform backward propagation or load saved file
+	python_model.backward_prop 	= True		# Perform backward propagation or load saved file
 	python_model.save_pickle 	= True  	# Save output in form of pickle file
 	python_model.save_output 	= True   	# Save output in form of text files
+	python_model.save_each_layer= True   	# Save layer in form of text files
+ 
 	Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_boxes)
 

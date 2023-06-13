@@ -83,9 +83,9 @@ if __name__ == '__main__':
 	python_model.cal_loss 			= True      # Perform loss calculation or load save file
 	python_model.backward_prop 		= True		# Perform backward propagation or load saved file
  
-	python_model.save_pickle 		= False  	# Save output in form of pickle file
+	python_model.save_pickle 		= True  	# Save output in form of pickle file
 
-	python_model.save_layer_output 	= False   	# Save output for each layers
+	python_model.save_layer_output 	= True   	# Save output for each layers
 	python_model.save_module_in_txt	= True   	# Save output for each module
 	python_model.save_module_in_hex = True   	# Save output in hex format
  

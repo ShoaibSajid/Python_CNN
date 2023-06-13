@@ -24,7 +24,7 @@ def convert_to_hex(value):
   Exponent_Bit = 5
   Mantissa_Bit = 10
   Bias = 15
-  Binary_Value1 = F2B(value, Exponent_Bit, Mantissa_Bit)
+  Binary_Value1 = Floating2Binary(value, Exponent_Bit, Mantissa_Bit)
   Hexadecimal_Value1 = hex(int(Binary_Value1, 2))[2:].upper()
   
   # Previous condition

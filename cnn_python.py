@@ -12,7 +12,8 @@ import torch.nn.functional as F
 import bz2file as bz2
 
 # Convert format
-from conversions import *
+from conversions import Floating2Binary as F2B
+from conversions import Binary2Floating as B2F
 
 import torch
 from config import config as cfg
@@ -24,6 +25,18 @@ import numpy as np
 
 warnings.simplefilter("ignore", UserWarning)
 
+def convert_to_hex(value):
+  # IEEE16 Floating Point: sign=1bit, exponent=5bits, mantissa=10bits
+  Exponent_Bit = 5
+  Mantissa_Bit = 10
+  Bias = 15
+  Binary_Value1 = F2B(value, Exponent_Bit, Mantissa_Bit)
+  Hexadecimal_Value1 = hex(int(Binary_Value1, 2))[2:].upper()
+  if Hexadecimal_Value1 == '0':
+      Hexadecimal_Value1_ = Hexadecimal_Value1 + '000'
+  else:
+      Hexadecimal_Value1_ = Hexadecimal_Value1
+  return Hexadecimal_Value1_
 
 def save_txt(fname,data):
   
@@ -56,6 +69,42 @@ def save_txt(fname,data):
           for _k in range(y):
             for _l in range(z):
               outfile.write(f'{data[_i,_j,_k,_l]}\n')
+    outfile.close()  
+    
+    print(f'\n\t\t--> Saved {fname}')
+
+def save_txt_converted(fname,data):
+  
+  if type(data) is dict:
+    for _key in data.keys():
+      _fname = fname+f'_{_key}'
+      save_txt(_fname,data[_key])
+  
+  else:
+    Path(os.path.split(fname)[0]).mkdir(parents=True, exist_ok=True)
+    fname = fname+'_converted.txt'
+    
+    if torch.is_tensor(data):
+      try: data = data.detach()
+      except: pass
+      data = data.numpy()
+    
+    outfile = open(fname, mode='w')
+    outfile.write(f'{data.shape}\n')
+    
+    if len(data.shape)==0:
+      outfile.write(f'{data}\n')
+    elif len(data.shape)==1:
+      for x in data:
+        outfile.write(f'{convert_to_hex(x)}\n')
+    else:
+      w,x,y,z = data.shape
+      for _i in range(w):
+        for _j in range(x):
+          for _k in range(y):
+            for _l in range(z):
+              _value = data[_i,_j,_k,_l]
+              outfile.write(f'{convert_to_hex(_value)}\n')
     outfile.close()  
     
     print(f'\n\t\t--> Saved {fname}')
@@ -1517,6 +1566,9 @@ class Python_ConvB(object):
             dx[n,:,height*stride:height*stride+HH,width*stride:width*stride+WW]+=w[f] * dout[n,f,height,width]
     if pad != 0:   
       dx = dx[:,:,1:-1,1:-1] # delete padded "pixels"
+
+    save_txt('Conv/Gradient_Of_Input',dx)
+    save_txt_converted('Conv/Gradient_Of_Input',dx)
 
     return dx, dw, db
 

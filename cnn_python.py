@@ -7,7 +7,12 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+# Zip the pickle file
 import bz2file as bz2
+
+# Convert format
+from conversions import *
 
 import torch
 from config import config as cfg
@@ -21,6 +26,41 @@ warnings.simplefilter("ignore", UserWarning)
 
 
 def save_txt(fname,data):
+  
+  if type(data) is dict:
+    for _key in data.keys():
+      _fname = fname+f'_{_key}'
+      save_txt(_fname,data[_key])
+  
+  else:
+    Path(os.path.split(fname)[0]).mkdir(parents=True, exist_ok=True)
+    fname = fname+'.txt'
+    
+    if torch.is_tensor(data):
+      try: data = data.detach()
+      except: pass
+      data = data.numpy()
+    
+    outfile = open(fname, mode='w')
+    outfile.write(f'{data.shape}\n')
+    
+    if len(data.shape)==0:
+      outfile.write(f'{data}\n')
+    elif len(data.shape)==1:
+      for x in data:
+        outfile.write(f'{x}\n')
+    else:
+      w,x,y,z = data.shape
+      for _i in range(w):
+        for _j in range(x):
+          for _k in range(y):
+            for _l in range(z):
+              outfile.write(f'{data[_i,_j,_k,_l]}\n')
+    outfile.close()  
+    
+    print(f'\n\t\t--> Saved {fname}')
+
+def save_cache(fname,data):
   
   if type(data) is dict:
     for _key in data.keys():
@@ -294,8 +334,8 @@ class DeepConvNet(object):
       # save_txt(f'Outputs/Python/Forward/cache_Layer'     , cache)
       save_txt(f'Outputs/Python/Loss/loss'               , loss)
       save_txt(f'Outputs/Python/Loss/loss_grad'          , loss_grad)
-      save_txt(f'Outputs/Python/Backward/lDout_Layer'    , lDout)
-      save_txt(f'Outputs/Python/Backward/grads'          , grads)
+      save_txt(f'Outputs/Python/Backward/Gradients_of_Input_Features'   , lDout)
+      save_txt(f'Outputs/Python/Backward/Gradients_'          , grads)
       save_txt(f'Outputs/Python/Parameters/'             , self.params)
       save_txt(f'Outputs/Python/Input_Image'             , X)
       print('Outputs have been saved')
@@ -435,20 +475,44 @@ class DeepConvNet(object):
     print(f"\n\t grads['W8']\n\t\t{grads['W8'].shape}\n\t\t{grads['W8'][grads['W8']!=0]}\n")
     dOut[7], grads['W7'], grads['gamma7'], grads['beta7']  = Python_Conv_BatchNorm_ReLU.backward      (dOut[8], cache['7'])
     print(f"\n\t grads['W7']\n\t\t{grads['W7'].shape}\n\t\t{grads['W7'][grads['W7']!=0]}\n")
+    # Save in FP16
+
+    # Load FP 16 -> FP 32
     dOut[6], grads['W6'], grads['gamma6'], grads['beta6']  = Python_Conv_BatchNorm_ReLU.backward      (dOut[7], cache['6'])
     print(f"\n\t grads['W6']\n\t\t{grads['W6'].shape}\n\t\t{grads['W6'][grads['W6']!=0]}\n")
+    # Save in FP16
+
+    # Load FP 16 -> FP 32
     dOut[5], grads['W5'], grads['gamma5'], grads['beta5']  = Python_Conv_BatchNorm_ReLU.backward      (dOut[6], cache['5'])
     print(f"\n\t grads['W5']\n\t\t{grads['W5'].shape}\n\t\t{grads['W5'][grads['W5']!=0]}\n")
+    # Save in FP16
+
+    # Load FP 16 -> FP 32
     dOut[4], grads['W4'], grads['gamma4'], grads['beta4']  = Python_Conv_BatchNorm_ReLU_Pool.backward (dOut[5], cache['4'])
     print(f"\n\t grads['W4']\n\t\t{grads['W4'].shape}\n\t\t{grads['W4'][grads['W4']!=0]}\n")
+    # Save in FP16
+
+    # Load FP 16 -> FP 32
     dOut[3], grads['W3'], grads['gamma3'], grads['beta3']  = Python_Conv_BatchNorm_ReLU_Pool.backward (dOut[4], cache['3'])
     print(f"\n\t grads['W3']\n\t\t{grads['W3'].shape}\n\t\t{grads['W3'][grads['W3']!=0]}\n")
+    # Save in FP16
+
+    # Load FP 16 -> FP 32
     dOut[2], grads['W2'], grads['gamma2'], grads['beta2']  = Python_Conv_BatchNorm_ReLU_Pool.backward (dOut[3], cache['2'])
     print(f"\n\t grads['W2']\n\t\t{grads['W2'].shape}\n\t\t{grads['W2'][grads['W2']!=0]}\n")
+    # Save in FP16
+
+    # Load FP 16 -> FP 32
     dOut[1], grads['W1'], grads['gamma1'], grads['beta1']  = Python_Conv_BatchNorm_ReLU_Pool.backward (dOut[2], cache['1'])
     print(f"\n\t grads['W1']\n\t\t{grads['W1'].shape}\n\t\t{grads['W1'][grads['W1']!=0]}\n")
+    # Save in FP16
+
+    # Load FP 16 -> FP 32
     dOut[0], grads['W0'], grads['gamma0'], grads['beta0']  = Python_Conv_BatchNorm_ReLU_Pool.backward (dOut[1], cache['0'])
     # print(f"\n\t grads['W0']\n\t\t{grads['W0'].shape}\n\t\t{grads['W0'][grads['W0']!=0]}\n")
+    # Save in FP16
+
+    # Load FP 16 -> FP 32
         
     # # Save pickle files for future use
     # if self.save_pickle:
@@ -997,14 +1061,14 @@ def prepare_im_data(img):
 
 	return im_data, im_info
 
-def compressed_pickle(title, data):
-	with bz2.BZ2File(title + ".pbz2", 'w') as f:
-		pickle.dump(data, f)
+# def compressed_pickle(title, data):
+# 	with bz2.BZ2File(title + ".pbz2", 'w') as f:
+# 		pickle.dump(data, f)
 
-def decompress_pickle(file):
-	data = bz2.BZ2File(file, "rb")
-	data = pickle.load(data)
-	return data
+# def decompress_pickle(file):
+# 	data = bz2.BZ2File(file, "rb")
+# 	data = pickle.load(data)
+# 	return data
 
 class WeightLoader(object):
 	def __init__(self):
@@ -1943,9 +2007,13 @@ class Python_Conv_BatchNorm_ReLU_Pool(object):
   @staticmethod
   def forward(x, w, gamma, beta, conv_param, bn_params, pool_param):
     a, conv_cache = Python_Conv.forward(x, w, conv_param)
+    # Dump data here
     an, bn_cache = Python_SpatialBatchNorm.forward(a, gamma, beta, bn_params)
+    # Dump data here
     s, relu_cache = Python_ReLU.forward(an)
+    # Dump data here
     out, pool_cache = Python_MaxPool.forward(s, pool_param)
+    # Dump data here
     cache = (conv_cache, bn_cache, relu_cache, pool_cache)
     return out, cache
 
@@ -1953,9 +2021,13 @@ class Python_Conv_BatchNorm_ReLU_Pool(object):
   def backward(dout, cache):
     conv_cache, bn_cache, relu_cache, pool_cache = cache
     ds = Python_MaxPool.backward(dout, pool_cache)
+    # Dump data here
     dan = Python_ReLU.backward(ds, relu_cache)
+    # Dump data here
     da, dgamma, dbeta = Python_SpatialBatchNorm.backward(dan, bn_cache)
+    # Dump data here
     dx, dw = Python_Conv.backward(da, conv_cache)
+    # Dump data here
     return dx, dw, dgamma, dbeta
 
 class Python_ReLU(object):

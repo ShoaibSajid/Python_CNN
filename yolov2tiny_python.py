@@ -85,9 +85,11 @@ if __name__ == '__main__':
  
 	python_model.save_pickle 		= True  	# Save output in form of pickle file
 
-	python_model.save_layer_output 	= True   	# Save output for each layers
-	python_model.save_module_in_txt	= True   	# Save output for each module
-	python_model.save_module_in_hex = True   	# Save output in hex format
+	python_model.save_layer_output 	= True   	# Save output for each layers (not module)
+	python_model.save_module_output	= True   	# Save output for each module
+ 
+	python_model.save_in_dec_format	= True   	# Save output for each module in decimal format
+	python_model.save_in_hex_format = True   	# Save output in hex format
  
 	Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_boxes)
 

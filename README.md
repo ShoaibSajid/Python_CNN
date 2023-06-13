@@ -84,6 +84,8 @@ Clone the repository using the following lines
 git clone https://github.com/ShoaibSajid/Python_CNN
 cd Python_CNN
 git checkout Yolov2-Tiny
+pip install --upgrade --no-cache-dir gdown
+gdown --id 1B8hlZbsewj4RbEVM59yce0M3Nyz54KFQ
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -111,11 +113,6 @@ pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 torchaudio==0.12.1 --e
 Install the required packages using the following command
 ```bash
 pip install tqdm matplotlib mnist==0.2.2 numpy bz2file gdown
-```
-
-Download the default input data
-```bash
-gdown --id 1B8hlZbsewj4RbEVM59yce0M3Nyz54KFQ
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

@@ -2522,3 +2522,42 @@ class Python_Conv_BatchNorm_ReLU_Pool(object):
     
     print(f'{layer_no}',end=',')
     return dx, dw, dgamma, dbeta
+
+class Python_Pad2d(object):
+    
+    @staticmethod
+    def forward(x, pad_param):
+        new_shape = tuple(
+            left + size + right
+            for size, (left, right) in zip(x.shape, pad_param)
+        )
+
+        out = torch.zeros(new_shape)
+
+
+        original_area_slice = tuple(
+            slice(left, left + size)
+            for size, (left, right) in zip(x.shape, pad_param)
+        )
+        out[original_area_slice] = x
+
+        cache = (x, pad_param)
+
+        return out, cache
+
+    @staticmethod
+    def backward(dout, cache):
+
+        dx = None
+        x, pad_param = cache
+        N, C, H, W = x.shape
+
+        dx = torch.zeros_like(x)
+
+        for n in range(N):
+            for f in range(C):          
+                for height in range(H):
+                    for width in range(W):
+                        dx[n, f, height, width] = dout[n, f, height, width]
+
+        return dx

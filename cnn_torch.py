@@ -264,7 +264,6 @@ class DeepConvNetTorch(object):
     pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
 
     scores = None
-
     slowpool_param = {'pool_height':2, 'pool_width':2, 'stride': 1}
     cache = {}
     out = X
@@ -275,8 +274,10 @@ class DeepConvNetTorch(object):
     out,cache['3'] = Torch_Conv_BatchNorm_ReLU_Pool.forward(out, self.params['W3'], self.params['gamma3'], self.params['beta3'], conv_param, self.bn_params[3],pool_param)
     out,cache['4'] = Torch_Conv_BatchNorm_ReLU_Pool.forward(out, self.params['W4'], self.params['gamma4'], self.params['beta4'], conv_param, self.bn_params[4],pool_param)
     out,cache['5'] = Torch_Conv_BatchNorm_ReLU.forward     (out, self.params['W5'], self.params['gamma5'], self.params['beta5'], conv_param, self.bn_params[5]) 
+
     out            = F.pad                                 (out, (0, 1, 0, 1))
     out,cache['60']= Torch_FastMaxPool.forward             (out, slowpool_param)
+
     out,cache['6'] = Torch_Conv_BatchNorm_ReLU.forward     (out, self.params['W6'], self.params['gamma6'], self.params['beta6'], conv_param, self.bn_params[6]) 
     out,cache['7'] = Torch_Conv_BatchNorm_ReLU.forward     (out, self.params['W7'], self.params['gamma7'], self.params['beta7'], conv_param, self.bn_params[7]) 
     conv_param['pad'] = 0
@@ -1635,3 +1636,72 @@ class Torch_ReLU(object):
         dx = dout * dl
 
         return dx
+    
+
+
+class Torch_FastMaxPool(object):
+
+  @staticmethod
+  def forward(x, pool_param):
+    N, C, H, W = x.shape
+    pool_height, pool_width = pool_param['pool_height'], pool_param['pool_width']
+    stride = pool_param['stride']
+    layer = torch.nn.MaxPool2d(kernel_size=(pool_height, pool_width), stride=stride)
+    tx = x.detach()
+    tx.requires_grad = True
+    out = layer(tx)
+    cache = (x, pool_param, tx, out, layer)
+    return out, cache
+
+  @staticmethod
+  def backward(dout, cache):
+    try:
+      x, _, tx, out, layer = cache
+      out.backward(dout)
+      dx = tx.grad.detach()
+    except RuntimeError:
+      dx = torch.zeros_like(tx)
+    return dx
+    
+class Torch_Pad2d(object):
+
+  @staticmethod
+  def forward(x, pad_param):
+    N, C, H, W = x.shape
+    layer = torch.nn.ReflecionPad2d(pad_param)
+    tx = x.detach()
+    tx.requires_grad = True
+    out = layer(tx)
+    cache = (x, pad_param, tx, out, layer)
+    return out, cache
+  
+  @staticmethod
+  def backward(dout, cache):
+    try:
+      x, _, tx, out, layer = cache
+      out.backward(dout)
+      dx = tx.grad.detach()
+    except RuntimeError:
+      dx = torch.zeros_like(tx)
+
+class Torch_Pad2d(object):
+
+  @staticmethod
+  def forward(x, pad_param):
+    N, C, H, W = x.shape
+    layer = nn.ZeroPad2d(pad_param)
+    tx = x.detach()
+    tx.requires_grad = True
+    out = layer(tx)
+    cache = (x, pad_param, tx, out, layer)
+    return out, cache
+  
+  @staticmethod
+  def backward(dout, cache):
+    try:
+      x, _, tx, out, layer = cache
+      out.backward(dout)
+      dx = tx.grad.detach()
+    except RuntimeError:
+      dx = torch.zeros_like(tx)
+    return dx

@@ -60,11 +60,19 @@
 
 <!--  Next -->
 ## Next
-- Add Pad/Pool
-- Find Python/Torch 32 to 16 bit conversion
-- FP32 -> BFP16 / IEEE FP16
+<!-- - Add Pad/Pool -->
+- Add flags throughout the code for 2 levels, which can be controlled from main function.
+  - Save/Load output of each layer in 16 bit (Such as Layer 0, 1, 2 ... )
+  - Save/Load output of each module inside each layer in 16 bit (Such as Conv, BN, Pool, Relu)
+- Python/Torch 32 to 16 bit conversion
+  - Using half( ) function
+  - Check if there is any other method
+- Make a function for format conversion
+  - Set a flag to choose conversion format in the main function
+  - FP32 --> BFP16
+  - FP32 --> IEEE FP16
 - Train the network (PyTorch) without BN
-- Compare python code vs pytorch code vs original Yolov2-Tiny  OR   Train pytorch code 
+<!-- - Compare python code vs pytorch code vs original Yolov2-Tiny  OR   Train pytorch code  -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

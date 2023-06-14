@@ -2188,6 +2188,54 @@ class Python_SpatialBatchNorm(object):
 
     return dx, dgamma, dbeta
 
+class Python_Pad2d(object):
+    
+    @staticmethod
+    def forward(x, pad_param, layer_no=[], save_txt=False, save_hex=False, phase=[]):
+        save_file('Input'               , x  , module='Pad', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
+        
+        new_shape = tuple(
+            left + size + right
+            for size, (left, right) in zip(x.shape, pad_param)
+        )
+
+        out = torch.zeros(new_shape)
+
+
+        original_area_slice = tuple(
+            slice(left, left + size)
+            for size, (left, right) in zip(x.shape, pad_param)
+        )
+        out[original_area_slice] = x
+
+        cache = (x, pad_param)
+        
+        save_file('Output'              , out, module='Pad', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
+
+        return out, cache
+
+    @staticmethod
+    def backward(dout, cache, layer_no=[], save_txt=False, save_hex=False, phase=[]):
+
+        dx = None
+        x, pad_param = cache
+        N, C, H, W = x.shape
+        
+        save_file('Input_Features'      , x  , module='Pad', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
+        save_file('Loss_Gradients'      ,dout, module='Pad', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
+
+        dx = torch.zeros_like(x)
+
+        for n in range(N):
+            for f in range(C):          
+                for height in range(H):
+                    for width in range(W):
+                        dx[n, f, height, width] = dout[n, f, height, width]
+                        
+        save_file('Gradients_of_Input'  , dx , module='Pad', layer_no=layer_no, save_hex=save_hex, save_txt=save_txt, phase=phase)
+
+        return dx
+
 class Python_ReLU(object):
 
     @staticmethod
@@ -2522,42 +2570,3 @@ class Python_Conv_BatchNorm_ReLU_Pool(object):
     
     print(f'{layer_no}',end=',')
     return dx, dw, dgamma, dbeta
-
-class Python_Pad2d(object):
-    
-    @staticmethod
-    def forward(x, pad_param):
-        new_shape = tuple(
-            left + size + right
-            for size, (left, right) in zip(x.shape, pad_param)
-        )
-
-        out = torch.zeros(new_shape)
-
-
-        original_area_slice = tuple(
-            slice(left, left + size)
-            for size, (left, right) in zip(x.shape, pad_param)
-        )
-        out[original_area_slice] = x
-
-        cache = (x, pad_param)
-
-        return out, cache
-
-    @staticmethod
-    def backward(dout, cache):
-
-        dx = None
-        x, pad_param = cache
-        N, C, H, W = x.shape
-
-        dx = torch.zeros_like(x)
-
-        for n in range(N):
-            for f in range(C):          
-                for height in range(H):
-                    for width in range(W):
-                        dx[n, f, height, width] = dout[n, f, height, width]
-
-        return dx

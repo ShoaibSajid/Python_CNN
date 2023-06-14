@@ -60,10 +60,11 @@
 
 <!--  Next -->
 ## Next
-- Add instructions in readme (conda, enviornment)
-- FP32 -> BFP16 / IEEE FP16
-- Pre-trained weight parameters
+- Add Pad/Pool
 - Find Python/Torch 32 to 16 bit conversion
+- FP32 -> BFP16 / IEEE FP16
+- Train the network (PyTorch) without BN
+- Compare python code vs pytorch code vs original Yolov2-Tiny  OR   Train pytorch code 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

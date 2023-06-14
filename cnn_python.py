@@ -18,124 +18,6 @@ import math
 import bz2file as bz2
 warnings.simplefilter("ignore", UserWarning)
 
-
-def convert_to_hex(value):
-  # IEEE16 Floating Point: sign=1bit, exponent=5bits, mantissa=10bits
-  Exponent_Bit = 5
-  Mantissa_Bit = 10
-  Bias = 15
-  Binary_Value1 = Floating2Binary(value, Exponent_Bit, Mantissa_Bit)
-  Hexadecimal_Value1 = hex(int(Binary_Value1, 2))[2:].upper()
-  
-  # Previous condition
-  # if Hexadecimal_Value1 == '0':
-  #     Hexadecimal_Value1_ = Hexadecimal_Value1 + '000'
-  # else:
-  #     Hexadecimal_Value1_ = Hexadecimal_Value1
-  
-  # New condition
-  if len(Hexadecimal_Value1) < 4: Hexadecimal_Value1 = Hexadecimal_Value1.zfill(4)
-  
-  return Hexadecimal_Value1
-
-def save_file(fname, data, module=[], layer_no=[], save_txt=False, save_hex=False, phase=[]):
-  
-  if save_txt or save_hex:
-    if type(data) is dict:
-      for _key in data.keys():
-        _fname = fname+f'_{_key}'
-        save_file(_fname,data[_key])
-    
-    else:
-      if module==[] and layer_no==[]: 
-        Out_Path = f'Outputs/{os.path.split(fname)[0]}'
-        fname = os.path.split(fname)[1]
-      else:
-        Out_Path = f'Outputs/By_Layer/'
-        if layer_no!=[]: Out_Path+= f'Layer{layer_no}/'
-        if module!=[]: Out_Path+= f'{module}/'
-        if phase!=[]: Out_Path+= f'{phase}/'
-        fname=fname
-        
-      if save_txt: filename = os.path.join(Out_Path, fname+'.txt')
-      if save_hex: hexname  = os.path.join(Out_Path, fname+'_hex.txt')
-      
-      Path(Out_Path).mkdir(parents=True, exist_ok=True)
-      
-      if torch.is_tensor(data):
-        try: data = data.detach()
-        except: pass
-        data = data.numpy()
-      
-      if save_txt: outfile = open(filename  , mode='w')
-      if save_txt: outfile.write(f'{data.shape}\n')
-      
-      if save_hex: hexfile = open(hexname, mode='w')
-      if save_hex: hexfile.write(f'{data.shape}\n')
-      
-      if len(data.shape)==0:
-        if save_txt: outfile.write(f'{data}\n')
-        if save_hex: hexfile.write(f'{data}\n')
-        pass
-      elif len(data.shape)==1:
-        for x in data:
-          if save_txt: outfile.write(f'{x}\n')
-          if save_hex: hexfile.write(f'{convert_to_hex(x)}\n')
-          pass
-      else:
-        w,x,y,z = data.shape
-        for _i in range(w):
-          for _j in range(x):
-            for _k in range(y):
-              for _l in range(z):
-                _value = data[_i,_j,_k,_l]
-                if save_txt: outfile.write(f'{_value}\n')
-                if save_hex: hexfile.write(f'{convert_to_hex(_value)}\n')
-                pass
-                
-      if save_hex: hexfile.close()  
-      if save_txt: outfile.close()  
-      
-      if save_txt: print(f'\t\t--> Saved {filename}')
-      if save_hex: print(f'\t\t--> Saved {hexname}')
-  # else:
-      # print(f'\n\t\t--> Saved {filename}')
-
-def save_cache(fname,data):
-  
-  if type(data) is dict:
-    for _key in data.keys():
-      _fname = fname+f'_{_key}'
-      save_file(_fname,data[_key])
-  
-  else:
-    Path(os.path.split(fname)[0]).mkdir(parents=True, exist_ok=True)
-    fname = fname+'.txt'
-    
-    if torch.is_tensor(data):
-      try: data = data.detach()
-      except: pass
-      data = data.numpy()
-    
-    outfile = open(fname, mode='w')
-    outfile.write(f'{data.shape}\n')
-    
-    if len(data.shape)==0:
-      outfile.write(f'{data}\n')
-    elif len(data.shape)==1:
-      for x in data:
-        outfile.write(f'{x}\n')
-    else:
-      w,x,y,z = data.shape
-      for _i in range(w):
-        for _j in range(x):
-          for _k in range(y):
-            for _l in range(z):
-              outfile.write(f'{data[_i,_j,_k,_l]}\n')
-    outfile.close()  
-    
-    print(f'\n\t\t--> Saved {fname}')
-
 class DeepConvNet(object):
   """
   A convolutional neural network with an arbitrary number of convolutional
@@ -742,6 +624,123 @@ class last_layer(nn.Module):
   def forward(self, x):
     
     return self.conv9(x)
+
+def convert_to_hex(value):
+  # IEEE16 Floating Point: sign=1bit, exponent=5bits, mantissa=10bits
+  Exponent_Bit = 5
+  Mantissa_Bit = 10
+  Bias = 15
+  Binary_Value1 = Floating2Binary(value, Exponent_Bit, Mantissa_Bit)
+  Hexadecimal_Value1 = hex(int(Binary_Value1, 2))[2:].upper()
+  
+  # Previous condition
+  # if Hexadecimal_Value1 == '0':
+  #     Hexadecimal_Value1_ = Hexadecimal_Value1 + '000'
+  # else:
+  #     Hexadecimal_Value1_ = Hexadecimal_Value1
+  
+  # New condition
+  if len(Hexadecimal_Value1) < 4: Hexadecimal_Value1 = Hexadecimal_Value1.zfill(4)
+  
+  return Hexadecimal_Value1
+
+def save_file(fname, data, module=[], layer_no=[], save_txt=False, save_hex=False, phase=[]):
+  
+  if save_txt or save_hex:
+    if type(data) is dict:
+      for _key in data.keys():
+        _fname = fname+f'_{_key}'
+        save_file(_fname,data[_key])
+    
+    else:
+      if module==[] and layer_no==[]: 
+        Out_Path = f'Outputs/{os.path.split(fname)[0]}'
+        fname = os.path.split(fname)[1]
+      else:
+        Out_Path = f'Outputs/By_Layer/'
+        if layer_no!=[]: Out_Path+= f'Layer{layer_no}/'
+        if module!=[]: Out_Path+= f'{module}/'
+        if phase!=[]: Out_Path+= f'{phase}/'
+        fname=fname
+        
+      if save_txt: filename = os.path.join(Out_Path, fname+'.txt')
+      if save_hex: hexname  = os.path.join(Out_Path, fname+'_hex.txt')
+      
+      Path(Out_Path).mkdir(parents=True, exist_ok=True)
+      
+      if torch.is_tensor(data):
+        try: data = data.detach()
+        except: pass
+        data = data.numpy()
+      
+      if save_txt: outfile = open(filename  , mode='w')
+      if save_txt: outfile.write(f'{data.shape}\n')
+      
+      if save_hex: hexfile = open(hexname, mode='w')
+      if save_hex: hexfile.write(f'{data.shape}\n')
+      
+      if len(data.shape)==0:
+        if save_txt: outfile.write(f'{data}\n')
+        if save_hex: hexfile.write(f'{data}\n')
+        pass
+      elif len(data.shape)==1:
+        for x in data:
+          if save_txt: outfile.write(f'{x}\n')
+          if save_hex: hexfile.write(f'{convert_to_hex(x)}\n')
+          pass
+      else:
+        w,x,y,z = data.shape
+        for _i in range(w):
+          for _j in range(x):
+            for _k in range(y):
+              for _l in range(z):
+                _value = data[_i,_j,_k,_l]
+                if save_txt: outfile.write(f'{_value}\n')
+                if save_hex: hexfile.write(f'{convert_to_hex(_value)}\n')
+                pass
+                
+      if save_hex: hexfile.close()  
+      if save_txt: outfile.close()  
+      
+      if save_txt: print(f'\t\t--> Saved {filename}')
+      if save_hex: print(f'\t\t--> Saved {hexname}')
+  # else:
+      # print(f'\n\t\t--> Saved {filename}')
+
+def save_cache(fname,data):
+  
+  if type(data) is dict:
+    for _key in data.keys():
+      _fname = fname+f'_{_key}'
+      save_file(_fname,data[_key])
+  
+  else:
+    Path(os.path.split(fname)[0]).mkdir(parents=True, exist_ok=True)
+    fname = fname+'.txt'
+    
+    if torch.is_tensor(data):
+      try: data = data.detach()
+      except: pass
+      data = data.numpy()
+    
+    outfile = open(fname, mode='w')
+    outfile.write(f'{data.shape}\n')
+    
+    if len(data.shape)==0:
+      outfile.write(f'{data}\n')
+    elif len(data.shape)==1:
+      for x in data:
+        outfile.write(f'{x}\n')
+    else:
+      w,x,y,z = data.shape
+      for _i in range(w):
+        for _j in range(x):
+          for _k in range(y):
+            for _l in range(z):
+              outfile.write(f'{data[_i,_j,_k,_l]}\n')
+    outfile.close()  
+    
+    print(f'\n\t\t--> Saved {fname}')
 
 def build_target(output, gt_data, H, W):
     """

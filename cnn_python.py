@@ -2483,7 +2483,7 @@ class Python_Conv_BatchNorm_ReLU_Pool(object):
 
   @staticmethod
   def forward(x, w, gamma, beta, conv_param, bn_params, pool_param, layer_no=[], save_txt=False, save_hex=False, phase=[]):
-    
+    # Load in FP16 --> FP 32
     a,    conv_cache  = Python_Conv.forward(
                                             x, 
                                             w, 
@@ -2493,7 +2493,9 @@ class Python_Conv_BatchNorm_ReLU_Pool(object):
                                             save_hex=save_hex, 
                                             phase=phase
                                             )
-
+    # Convert 32-> 16 --> Save in FP16
+    
+    # Load in FP16 --> FP 32
     an,   bn_cache    = Python_SpatialBatchNorm.forward(
                                             a, 
                                             gamma, 

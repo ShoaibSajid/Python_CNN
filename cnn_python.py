@@ -625,24 +625,135 @@ class last_layer(nn.Module):
     
     return self.conv9(x)
 
+
+#################################################################################
+# Functions from Circuit Team
+
 def convert_to_hex(value):
-  # IEEE16 Floating Point: sign=1bit, exponent=5bits, mantissa=10bits
-  Exponent_Bit = 5
-  Mantissa_Bit = 10
-  Bias = 15
-  Binary_Value1 = Floating2Binary(value, Exponent_Bit, Mantissa_Bit)
-  Hexadecimal_Value1 = hex(int(Binary_Value1, 2))[2:].upper()
+    # We will Use Single-Precision, Truncated and Rounding into Brain Floating Point
+    # IEEE754 Single-Precision: Sign=1, Exponent_Bit=8, Mantissa_Bit=23
+    Exponent_Bit = 8
+    Mantissa_Bit = 23
+    Binary_Value1 = Floating2Binary(value, Exponent_Bit, Mantissa_Bit)
+    Hexadecimal_Value1 = hex(int(Binary_Value1, 2))[2:]
+    # Truncating and Rounding
+    Floating_Hexadecimal = Truncating_Rounding(Hexadecimal_Value1)
+    if len(Floating_Hexadecimal) < 4:
+        Brain_Floating_Hexadecimal = Floating_Hexadecimal.zfill(4)
+    else:
+        Brain_Floating_Hexadecimal = Floating_Hexadecimal
+    return Brain_Floating_Hexadecimal
+
+def Floating2Binary(num, Exponent_Bit, Mantissa_Bit):
+    sign = ('1' if num < 0 else '0')
+    num = abs(num)
+    bias = math.pow(2, (Exponent_Bit - 1)) - 1
+    if num == 0:
+        e = 0
+    else:
+        e = math.floor(math.log(num, 2) + bias)
+
+    if e > (math.pow(2, Exponent_Bit) - 2):  # overflow
+        exponent = '1' * Exponent_Bit
+        mantissa = '0' * Mantissa_Bit
+    else:
+        if e > 0:
+            s = num / math.pow(2, e - bias) - 1
+            exponent = bin(e)[2:].zfill(Exponent_Bit)
+        else:  # submoral
+            s = num / math.pow(2, (-bias + 1))
+            exponent = '0' * Exponent_Bit
+        # Rounding Mode By Adding 0.5 (Half-Rounding or Banker's Rounding)
+        # Number is smaller or equal 0.5 is rounding down
+        # Number is larger 0.5 is rounding up
+        mantissa = bin(int(s * (math.pow(2, Mantissa_Bit)) + 0.5))[2:].zfill(Mantissa_Bit)[:Mantissa_Bit]
+        # Non-Rounding Mode
+        # mantissa = bin(int(s * (math.pow(2, Mantissa_Bit)))[2:].zfill(Mantissa_Bit)[:Mantissa_Bit]
+    Floating_Binary = sign + exponent + mantissa
+
+    return Floating_Binary
+
+def Binary2Floating(value, Exponent_Bit, Mantissa_Bit):
+    sign = int(value[0], 2)
+    if int(value[1:1 + Exponent_Bit], 2) != 0:
+        exponent = int(value[1:1 + Exponent_Bit], 2) - int('1' * (Exponent_Bit - 1), 2)
+        mantissa = int(value[1 + Exponent_Bit:], 2) * (math.pow(2, (-Mantissa_Bit))) + 1
+    else:  # subnormal
+        exponent = 1 - int('1' * (Exponent_Bit - 1), 2)
+        # mantissa = int(value[1 + Exponent_Bit:], 2) * 2 ** (-Mantissa_Bit)
+        mantissa = int(value[1 + Exponent_Bit:], 2) * math.pow(2, (-Mantissa_Bit))
+    Floating_Decimal = (math.pow(-1, sign)) * (math.pow(2, exponent)) * mantissa
+    return Floating_Decimal
+
+def Truncating_Rounding(Truncated_Hexadecimal):
+    # Consider only the Length of Truncated_Hexadecimal only in [0:5]
+    if len(Truncated_Hexadecimal) >= 5:
+        # If this Truncated_Hexadecimal[4] >= 5 => Rounding Up the First 16 Bits
+        if int(Truncated_Hexadecimal[4], 16) >= 5:
+            Rounding_Hexadecimal = hex(int(Truncated_Hexadecimal[:4], 16) + 1)[2:]
+        else:
+            Rounding_Hexadecimal = Truncated_Hexadecimal[:4]
+    else:
+        Rounding_Hexadecimal = Truncated_Hexadecimal
+
+    Rounding_Hexadecimal_Capitalized = Rounding_Hexadecimal.upper()
+
+    return Rounding_Hexadecimal_Capitalized
+
+
+# def convert_to_hex(value):
+#   # IEEE16 Floating Point: sign=1bit, exponent=5bits, mantissa=10bits
+#   Exponent_Bit = 5
+#   Mantissa_Bit = 10
+#   Bias = 15
+#   Binary_Value1 = Floating2Binary(value, Exponent_Bit, Mantissa_Bit)
+#   Hexadecimal_Value1 = hex(int(Binary_Value1, 2))[2:].upper()
   
-  # Previous condition
-  # if Hexadecimal_Value1 == '0':
-  #     Hexadecimal_Value1_ = Hexadecimal_Value1 + '000'
-  # else:
-  #     Hexadecimal_Value1_ = Hexadecimal_Value1
+#   # Previous condition
+#   # if Hexadecimal_Value1 == '0':
+#   #     Hexadecimal_Value1_ = Hexadecimal_Value1 + '000'
+#   # else:
+#   #     Hexadecimal_Value1_ = Hexadecimal_Value1
   
-  # New condition
-  if len(Hexadecimal_Value1) < 4: Hexadecimal_Value1 = Hexadecimal_Value1.zfill(4)
+#   # New condition
+#   if len(Hexadecimal_Value1) < 4: Hexadecimal_Value1 = Hexadecimal_Value1.zfill(4)
   
-  return Hexadecimal_Value1
+#   return Hexadecimal_Value1
+
+# def Floating2Binary(num, Exponent_Bit, Mantissa_Bit):
+#     # Designed By Thaising
+#     # Combined Master-PhD in MSISLAB
+#     sign = ('1' if num < 0 else '0')
+#     num = abs(num)
+#     bias = (2 ** (Exponent_Bit - 1) - 1)
+#     e = (0 if num == 0 else math.floor(math.log(num, 2) + bias))
+#     if e > (2 ** Exponent_Bit - 2):  # overflow
+#         exponent = '1' * Exponent_Bit
+#         mantissa = '0' * Mantissa_Bit
+#     else:
+#         if e > 0:  # normal
+#             s = num / 2 ** (e - bias) - 1
+#             exponent = bin(e)[2:].zfill(Exponent_Bit)
+#         else:  # submoral
+#             s = num / 2 ** (-bias + 1)
+#             exponent = '0' * Exponent_Bit
+#         mantissa = bin(int(s * (2 ** Mantissa_Bit) + 0.5))[2:].zfill(Mantissa_Bit)[:Mantissa_Bit]
+#     return sign + exponent + mantissa
+
+# def Binary2Floating(s, Exponent_Bit, Mantissa_Bit):
+#     # 2023/04/29: Designed By Thaising
+#     # Combined Master-PhD in MSISLAB
+#     neg = int(s[0], 2)
+#     if int(s[1:1 + Exponent_Bit], 2) != 0:
+#         exponent = int(s[1:1 + Exponent_Bit], 2) - int('1' * (Exponent_Bit - 1), 2)
+#         mantissa = int(s[1 + Exponent_Bit:], 2) * 2 ** (-Mantissa_Bit) + 1
+#     else:  # subnormal
+#         exponent = 1 - int('1' * (Exponent_Bit - 1), 2)
+#         mantissa = int(s[1 + Exponent_Bit:], 2) * 2 ** (-Mantissa_Bit)
+#     return ((-1) ** neg) * (2 ** exponent) * mantissa
+
+
+##################################################################################
 
 def save_file(fname, data, module=[], layer_no=[], save_txt=False, save_hex=False, phase=[]):
   
@@ -1619,38 +1730,6 @@ class Yolov2(nn.Module):
 
 
     return delta_pred, conf_pred, class_pred
-
-def Floating2Binary(num, Exponent_Bit, Mantissa_Bit):
-    # Designed By Thaising
-    # Combined Master-PhD in MSISLAB
-    sign = ('1' if num < 0 else '0')
-    num = abs(num)
-    bias = (2 ** (Exponent_Bit - 1) - 1)
-    e = (0 if num == 0 else math.floor(math.log(num, 2) + bias))
-    if e > (2 ** Exponent_Bit - 2):  # overflow
-        exponent = '1' * Exponent_Bit
-        mantissa = '0' * Mantissa_Bit
-    else:
-        if e > 0:  # normal
-            s = num / 2 ** (e - bias) - 1
-            exponent = bin(e)[2:].zfill(Exponent_Bit)
-        else:  # submoral
-            s = num / 2 ** (-bias + 1)
-            exponent = '0' * Exponent_Bit
-        mantissa = bin(int(s * (2 ** Mantissa_Bit) + 0.5))[2:].zfill(Mantissa_Bit)[:Mantissa_Bit]
-    return sign + exponent + mantissa
-
-def Binary2Floating(s, Exponent_Bit, Mantissa_Bit):
-    # 2023/04/29: Designed By Thaising
-    # Combined Master-PhD in MSISLAB
-    neg = int(s[0], 2)
-    if int(s[1:1 + Exponent_Bit], 2) != 0:
-        exponent = int(s[1:1 + Exponent_Bit], 2) - int('1' * (Exponent_Bit - 1), 2)
-        mantissa = int(s[1 + Exponent_Bit:], 2) * 2 ** (-Mantissa_Bit) + 1
-    else:  # subnormal
-        exponent = 1 - int('1' * (Exponent_Bit - 1), 2)
-        mantissa = int(s[1 + Exponent_Bit:], 2) * 2 ** (-Mantissa_Bit)
-    return ((-1) ** neg) * (2 ** exponent) * mantissa
 
 ################################################################################
 ################################################################################

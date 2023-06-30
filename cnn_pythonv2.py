@@ -402,7 +402,7 @@ class DeepConvNet(object):
     #                                                             phase   = self.phase    ,
     #                                                             )
     
-    Out[6], cache['6'] = Python_Conv_BatchNorm_ReLU.forward     (Out[61]                , 
+    Out[6], cache['6'] = Python_Conv_BatchNorm_ReLU.forward     (Out[5]                , 
                                                                 self.params['W6']       , 
                                                                 self.params['gamma6']   , 
                                                                 self.params['beta6']    , 

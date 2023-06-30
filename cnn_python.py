@@ -389,18 +389,18 @@ class DeepConvNet(object):
                                                                 )
     
     
-    save_file('Input' , Out[5], module='Pad', layer_no=6, save_hex=self.save_hex, save_txt=self.save_txt, phase=self.phase)
-    Out[60]            = F.pad                                  (Out[5] , (0, 1, 0, 1))
-    save_file('Output', Out[60], module='Pad', layer_no=6, save_hex=self.save_hex, save_txt=self.save_txt, phase=self.phase)
+    # save_file('Input' , Out[5], module='Pad', layer_no=6, save_hex=self.save_hex, save_txt=self.save_txt, phase=self.phase)
+    # Out[60]            = F.pad                                  (Out[5] , (0, 1, 0, 1))
+    # save_file('Output', Out[60], module='Pad', layer_no=6, save_hex=self.save_hex, save_txt=self.save_txt, phase=self.phase)
     
     
-    Out[61],cache['60']= Python_MaxPool.forward                 (Out[60]                , 
-                                                                slowpool_param          ,
-                                                                layer_no= 6            , 
-                                                                save_txt= self.save_txt , 
-                                                                save_hex= self.save_hex ,
-                                                                phase   = self.phase    ,
-                                                                )
+    # Out[61],cache['60']= Python_MaxPool.forward                 (Out[60]                , 
+    #                                                             slowpool_param          ,
+    #                                                             layer_no= 6            , 
+    #                                                             save_txt= self.save_txt , 
+    #                                                             save_hex= self.save_hex ,
+    #                                                             phase   = self.phase    ,
+    #                                                             )
     
     Out[6], cache['6'] = Python_Conv_BatchNorm_ReLU.forward     (Out[61]                , 
                                                                 self.params['W6']       , 

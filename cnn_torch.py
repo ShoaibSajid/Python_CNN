@@ -275,8 +275,8 @@ class DeepConvNetTorch(object):
     out,cache['4'] = Torch_Conv_BatchNorm_ReLU_Pool.forward(out, self.params['W4'], self.params['gamma4'], self.params['beta4'], conv_param, self.bn_params[4],pool_param)
     out,cache['5'] = Torch_Conv_BatchNorm_ReLU.forward     (out, self.params['W5'], self.params['gamma5'], self.params['beta5'], conv_param, self.bn_params[5]) 
 
-    out            = F.pad                                 (out, (0, 1, 0, 1))
-    out,cache['60']= Torch_FastMaxPool.forward             (out, slowpool_param)
+    # out            = F.pad                                 (out, (0, 1, 0, 1))
+    # out,cache['60']= Torch_FastMaxPool.forward             (out, slowpool_param)
 
     out,cache['6'] = Torch_Conv_BatchNorm_ReLU.forward     (out, self.params['W6'], self.params['gamma6'], self.params['beta6'], conv_param, self.bn_params[6]) 
     out,cache['7'] = Torch_Conv_BatchNorm_ReLU.forward     (out, self.params['W7'], self.params['gamma7'], self.params['beta7'], conv_param, self.bn_params[7]) 

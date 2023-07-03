@@ -414,7 +414,6 @@ class DeepConvNet(object):
     # Out[60]            = F.pad                                  (Out[5] , (0, 1, 0, 1))
     # save_file('Output', Out[60], module='Pad', layer_no=6, save_hex=self.save_hex, save_txt=self.save_txt, phase=self.phase)
     
-    
     # Out[61],cache['60']= Python_MaxPool.forward                 (Out[60]                , 
     #                                                             slowpool_param          ,
     #                                                             layer_no= 6            , 
@@ -423,9 +422,11 @@ class DeepConvNet(object):
     #                                                             phase   = self.phase    ,
     #                                                             )
     
+    # Out[6], cache['6'] = Python_Conv_BatchNorm_ReLU.forward     (Out[61]                , 
+    
     if self.convert_to_fp16 and self.convert_layer_IpOp and self.convert_forward: 
       Out[5] = convert_to_16(self, Out[5])
-    Out[6], cache['6'] = Python_Conv_BatchNorm_ReLU.forward     (Out[61]                , 
+    Out[6], cache['6'] = Python_Conv_BatchNorm_ReLU.forward     (Out[5]                , 
                                                                 self.params['W6']       , 
                                                                 self.params['gamma6']   , 
                                                                 self.params['beta6']    , 

@@ -80,30 +80,30 @@ else:
 
 if __name__ == '__main__':
 # Control Forward and Backward Prop
-	python_model.forward_prop 		= False  	# Perform forward propagation or load saved file.
-	python_model.cal_loss 			= True      # Perform loss calculation or load save file
-	python_model.backward_prop 		= True		# Perform backward propagation or load saved file
+	python_model.forward_prop 		  = False 	# Perform forward propagation or load saved file.
+	python_model.cal_loss 			  = True 	# Perform loss calculation or load save file
+	python_model.backward_prop 		  = True 	# Perform backward propagation or load saved file
+   
+#  Save outputs  
+	python_model.save_pickle 		  = False 	# Save output in form of pickle file
+  
+	python_model.save_layer_output 	  = False 	# Save output for each layers (not module)
+	python_model.save_module_output	  = False 	# Save output for each module
+   
+	python_model.save_in_dec_format	  = False 	# Save output for each module in decimal format
+	python_model.save_in_hex_format   = False 	# Save output in hex format
+   
+#  FP 32 to FP 16  
+	python_model.convert_to_fp16 	  = True 	# True to convert from FP32 to FP16
+  
+	python_model.convert_forward   	  = True 	# Convert the Forward Propagation
+	python_model.convert_loss_grad 	  = True 	# Convert the loss gradients
+	python_model.convert_backward  	  = True 	# Convert the backward propagation
  
-#  Save outputs
-	python_model.save_pickle 		= False  	# Save output in form of pickle file
-
-	python_model.save_layer_output 	= False   	# Save output for each layers (not module)
-	python_model.save_module_output	= False   	# Save output for each module
- 
-	python_model.save_in_dec_format	= False   	# Save output for each module in decimal format
-	python_model.save_in_hex_format = False   	# Save output in hex format
- 
-#  FP 32 to FP 16
-	python_model.convert_to_fp16 	= True     # True to convert from FP32 to FP16
-
-	python_model.convert_forward   	= True 		# Convert the Forward Propagation
-	python_model.convert_loss_grad 	= True		# Convert the loss gradients
-	python_model.convert_backward  	= True		# Convert the backward propagation
-
-	python_model.convert_layer_IpOp = True 		# Convert only layer input output     (Layer= Layer0, Layer1, etc)
-	python_model.convert_module_IpOp= True 		# Convert each module's input output  (Module = Conv, BN, etc)
- 
-	python_model.conversion_method  = 'Ali'		# 'Sawera'
-	python_model.convert_to_IEEE16 	= True 		# False means Convert from FP32 to BFP16
+	python_model.convert_layer_InOut  = True 	# Convert only layer input output     (Layer= Layer0, Layer1, etc)  #InOut
+	python_model.convert_module_InOut = True 	# Convert each module's input output  (Module = Conv, BN, etc)
+  
+	python_model.conversion_method    = 'Ali' 	# 'Sawera'
+	python_model.convert_to_IEEE16 	  = True 	# False means Convert from FP32 to BFP16
  
 	Fout, Fcache, loss, loss_grad, BlDout, Bgrads = python_model.train(im_data, gt_boxes=gt_boxes, gt_classes=gt_classes, num_boxes=num_boxes)

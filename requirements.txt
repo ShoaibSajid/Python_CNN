@@ -1,4 +1,3 @@
-tqdm
-matplotlib
-mnist==0.2.2
-numpy
+opencv-python
+pillow
+tensorboardX

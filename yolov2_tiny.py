@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from Post_Processing_Scratch.Calculate_Loss_2Iterations import build_target, yolo_loss
+from loss import build_target, yolo_loss
 
 
 class Yolov2(nn.Module):
